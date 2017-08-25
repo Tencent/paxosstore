@@ -1,0 +1,90 @@
+syntax = "proto2";
+
+package paxos;
+
+enum ErrorCode {
+    OK = 0;
+
+    UNCOMMITED_INDEX = 1;
+    NO_TIMEOUT_INDEX = 2;
+
+    BUSY = -100;
+
+    INVALID_INDEX = -200;
+
+    STORAGE_READ_ERROR = -300;
+    STORAGE_WRITE_ERROR = -310;
+}
+
+enum MessageType {
+    UNKOWN = 0;
+    NOOP = 1;
+    PROP = 2;
+    PROP_RSP = 3;
+    ACCPT = 4;
+    ACCPT_RSP = 5;
+
+    CHOSEN = 6;
+
+    CATCHUP = 10;
+    BEGIN_PROP = 11;
+    TRY_PROP = 12;
+
+    FAST_ACCPT = 13;
+    FAST_ACCPT_RSP = 14;
+    BEGIN_FAST_PROP = 15;
+
+    GET_CHOSEN = 20;
+    TRY_REDO_PROP = 21;
+
+    ERROR = -1;
+}
+
+message DBData {
+	required uint64 version   = 1;
+	required uint32 flag      = 2;
+	required bytes  value     = 3;
+	optional uint32 timestamp = 4;
+};
+
+message Entry {
+    required uint64    reqid = 1;
+    required string    data  = 2;
+}
+
+message Message {
+    required MessageType type = 1;
+    required uint32 from = 2;
+    required uint32 to = 3;
+
+    required string key = 4;
+    required uint64 index = 5;
+    required uint64 proposed_num = 6;
+
+    optional uint64 promised_num   = 7;
+    optional uint64 accepted_num   = 8;
+    optional Entry  accepted_value = 9;
+
+    optional uint32 timestamp = 10;
+}
+
+message PaxosInstance {
+    required uint64 index          = 1;
+    optional uint64 proposed_num   = 2; 
+    optional uint64 promised_num   = 3;
+    optional uint64 accepted_num   = 4;
+    optional Entry  accepted_value = 5;
+    optional uint64 timestamp      = 7; // ms
+    optional bool   chosen         = 8; // chosen flag
+}
+
+message PaxosLogHeader {
+    required uint64 max_index = 1;
+    required uint64 chosen_index = 2;
+    required uint64 reqid = 3;
+    required uint64 version = 4;
+}
+
+message PaxosLog {
+    repeated PaxosInstance entries = 1;
+}
