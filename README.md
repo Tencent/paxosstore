@@ -12,6 +12,7 @@ Before PaxosStore, We have QuorumKV storage system, which have powered WeChat se
  - __A high performance Key-Value system__
 
 Now PaxosStore is running on thousands of machines, powing Message/Moments/Offical Accounts/WePay serivces, with nealy billions of peak TPS. 
+
 ### PaxosStore Architecture
 
 ![image](images/overall_architecture.jpg)
@@ -21,3 +22,13 @@ For for technical details of PaxosStore, please refer to following paper/article
 - [微信PaxosStore：深入浅出Paxos算法协议](http://www.infoq.com/cn/articles/wechat-paxosstore-paxos-algorithm-protocol)  
 - [微信PaxosStore内存篇：十亿Paxos/分钟的挑战](http://www.infoq.com/cn/articles/one-billion-paxos-minutes-of-challenge)
 - [微信后台基于时间序的海量数据冷热分级架构设计实践](https://mp.weixin.qq.com/s/XlZF0GDt7dnHyYuS1an6tg)
+
+
+### Build
+
+- [Certain](./certain)
+- [PaxosKV](./paxoskv)
+
+### License
+
+PaxosStore is under the BSD 3-Clause License. See the [LICENSE.txt](./LICENSE.txt) file for details.
