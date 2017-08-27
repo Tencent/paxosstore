@@ -11,9 +11,9 @@
 
 #include <string>
 #include "gtest/gtest.h"
-#include "plog_wrapper.h"
-#include "paxos.pb.h"
-#include "pins_wrapper.h"
+#include "core/plog_wrapper.h"
+#include "core/paxos.pb.h"
+#include "core/pins_wrapper.h"
 #include "test_helper.h"
 
 

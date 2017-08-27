@@ -16,6 +16,7 @@
 #include <sys/shm.h>
 #include <sys/types.h>
 #include <string>
+#include <vector>
 #include "memcomm.h"
 
 namespace paxos {

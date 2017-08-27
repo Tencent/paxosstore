@@ -38,7 +38,7 @@ set(
 add_library(paxoskv_memkv STATIC ${SOURCES})
 target_link_libraries(paxoskv_memkv 
     ${PROTOBUF_LIBRARIES} ${LEVELDB_LIBRARIES} pthread
-    paxoskv_core paxoskv_dbcomm paxoskv_comm colib 
+    paxoskv_core paxoskv_dbcomm paxoskv_comm colib dl
     ${SNAPPY_LIBRARIES})
 
 message(STATUS "snappy: ${SNAPPY_INCLUDE_DIRS} ${SNAPPY_LIBRARIES}")

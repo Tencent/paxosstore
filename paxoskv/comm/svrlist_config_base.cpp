@@ -14,6 +14,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <algorithm>
 #include <cstdio>
 #include <cstring>
 #include <cassert>
@@ -441,7 +442,7 @@ static int LoadConfigFromCConfig_New( param &a,
 	//-----------------------------------
 
     std::vector< SvrGroup_t * > *pvGroups = new std::vector< SvrGroup_t* >();
-    std::auto_ptr< std::vector< SvrGroup_t* > > auto_groups( pvGroups );
+    std::unique_ptr< std::vector< SvrGroup_t* > > auto_groups( pvGroups );
 
     std::vector< SvrGroup_t * > &m_vGroups = *pvGroups;
 
@@ -550,7 +551,7 @@ static int LoadConfigFromCConfig_New( param &a,
 		svrCountC = ipC.size();
 		
 		SvrGroup_t * group = new SvrGroup_t();
-        std::auto_ptr< SvrGroup_t > x( group );
+        std::unique_ptr< SvrGroup_t > x( group );
 		memset( group,0,sizeof(*group) );
 		
 
@@ -575,7 +576,7 @@ static int LoadConfigFromCConfig_New( param &a,
 
 	SvrGroupList_t *grouplist = (SvrGroupList_t*)calloc( sizeof( SvrGroupList_t ),1 );
 	{
-        std::auto_ptr< SvrGroupList_t > oo( grouplist );
+        std::unique_ptr< SvrGroupList_t > oo( grouplist );
 		FillSvrGroupList( grouplist, m_vGroups, _selfIP );
 		a.SetGroupList4SelfIP( oo.release() );
 	}

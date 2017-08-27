@@ -121,6 +121,7 @@ int updateHeader(
         paxos::PaxosLogHeader& header)
 {
     // TODO
+	return -1;
 }
 
 std::unique_ptr<paxos::Message> 

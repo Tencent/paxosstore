@@ -11,10 +11,11 @@
 
 #include <cassert>
 #include "test_helper.h"
-#include "pins_wrapper.h"
-#include "plog_wrapper.h"
-#include "paxos.pb.h"
-#include "mem_utils.h"
+#include "core/pins_wrapper.h"
+#include "core/plog_wrapper.h"
+#include "core/plog_helper.h"
+#include "core/paxos.pb.h"
+#include "cutils/mem_utils.h"
 
 using namespace paxos;
 
@@ -24,8 +25,16 @@ const uint8_t selfid = 1;
 const uint64_t test_index = 1;
 const uint64_t test_reqid = 1;
 const uint64_t test_logid = 123;
-const std::string test_value = "test@test.com";
+const std::string test_value = "dengoswei@test.com";
 
+
+void set_key(paxos::Message& msg, uint64_t logid)
+{
+    std::string key;
+    key.resize(sizeof(uint64_t));
+    memcpy(&key[0], &logid, sizeof(uint64_t));
+    msg.set_key(key);
+}
 
 void set_accepted_value(const Entry& entry, Message& msg)
 {
@@ -75,7 +84,8 @@ void check_entry_equal(const Entry& a, const Entry& b)
 std::unique_ptr<PInsAliveState> EmptyPInsState(uint64_t index)
 {
     return cutils::make_unique<PInsAliveState>(
-			test_logid, index, cutils::prop_num_compose(selfid, 0));
+			paxos::to_paxos_key(test_logid), 
+            index, cutils::prop_num_compose(selfid, 0));
 }
 
 PaxosInstance EmptyPIns(uint64_t index)
@@ -97,7 +107,7 @@ WaitPropRsp()
     auto pins_impl = EmptyPIns(test_index);
     
     Message begin_prop_msg;
-	begin_prop_msg.set_logid(pins_state->GetLogID());
+    begin_prop_msg.set_key(pins_state->GetKey());
 	begin_prop_msg.set_index(pins_state->GetIndex());
     begin_prop_msg.set_type(MessageType::BEGIN_PROP);
     set_test_accepted_value(begin_prop_msg);
@@ -117,7 +127,7 @@ WaitAccptRsp(uint64_t index)
     auto pins_impl = EmptyPIns(index);
 
     Message begin_prop_msg;
-	begin_prop_msg.set_logid(pins_state->GetLogID());
+    begin_prop_msg.set_key(pins_state->GetKey());
 	begin_prop_msg.set_index(pins_state->GetIndex());
     begin_prop_msg.set_type(MessageType::BEGIN_PROP);
     set_test_accepted_value(begin_prop_msg);
@@ -131,7 +141,7 @@ WaitAccptRsp(uint64_t index)
     
     Message prop_rsp_msg;
     prop_rsp_msg.set_type(MessageType::PROP_RSP);
-	prop_rsp_msg.set_logid(pins_state->GetLogID());
+    prop_rsp_msg.set_key(pins_state->GetKey());
 	prop_rsp_msg.set_index(pins_state->GetIndex());
     prop_rsp_msg.set_from(2);
     prop_rsp_msg.set_proposed_num(pins_impl.proposed_num());
@@ -152,7 +162,7 @@ WaitFastAccptRsp()
     auto pins_impl = EmptyPIns(test_index);
 
     Message bfast_prop_msg;
-	bfast_prop_msg.set_logid(pins_state->GetLogID());
+    bfast_prop_msg.set_key(pins_state->GetKey());
 	bfast_prop_msg.set_index(pins_state->GetIndex());
     bfast_prop_msg.set_type(MessageType::BEGIN_FAST_PROP);
     set_test_accepted_value(bfast_prop_msg);
@@ -170,7 +180,7 @@ WaitFastAccptRsp()
 PaxosLog PLogOnlyChosen(uint64_t chosen_index)
 {
     PaxosLog plog_impl;
-    auto chosen_ins = plog_impl.mutable_chosen_ins();
+    auto chosen_ins = plog_impl.add_entries();
     assert(nullptr != chosen_ins);
     chosen_ins->set_index(chosen_index);
     uint64_t proposed_num = cutils::prop_num_compose(selfid, 0);
@@ -178,15 +188,16 @@ PaxosLog PLogOnlyChosen(uint64_t chosen_index)
     chosen_ins->set_promised_num(proposed_num);
     chosen_ins->set_accepted_num(proposed_num);
     set_test_accepted_value(*chosen_ins);
+    chosen_ins->set_chosen(true);
     return plog_impl;
 }
 
 PaxosLog PLogWithPending(uint64_t pending_index)
 {
     auto plog_impl = PLogOnlyChosen(1);
-    auto pending_ins = plog_impl.mutable_pending_ins();
+    auto pending_ins = plog_impl.add_entries();
     assert(nullptr != pending_ins);
-    assert(pending_index > plog_impl.chosen_ins().index());
+    assert(pending_index > paxos::get_chosen_ins(plog_impl)->index());
     pending_ins->set_index(pending_index);
     return plog_impl;
 }
@@ -211,7 +222,9 @@ std::map<uint8_t, PLogWrapper> MapPLogWrapper(std::vector<PaxosLog>& vec_plog)
                     const uint8_t, PLogWrapper>(
                         i+1, PLogWrapper{
                             static_cast<uint8_t>(i+1), 
-                            test_logid, nullptr, vec_plog[i]}));
+                            static_cast<uint16_t>(i+1), 
+                            paxos::to_paxos_key(test_logid), 
+                            nullptr, vec_plog[i]}));
     }
 
     return map_plog_wrapper;

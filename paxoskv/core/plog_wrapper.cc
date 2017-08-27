@@ -85,7 +85,7 @@ PLogWrapper::PLogWrapper(
             }
 
             assert(0 == ins.index() || index_sofar < ins.index());
-            index_sofar == ins.index();
+            index_sofar = ins.index();
         }
     }
 }

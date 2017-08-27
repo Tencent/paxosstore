@@ -542,7 +542,9 @@ clsNewMemKv::~clsNewMemKv()
 int clsNewMemKv::Init(
 		uint32_t iIdxHeadSize, 
 		const char* sPLogPath, 
-		uint32_t iMaxAppendBlockNum)
+		uint32_t iMaxAppendBlockNum,
+		int idxShmKey,
+		int dataBlockShmKey)
 {
 	assert(NULL == m_pHashBaseLock);
 	assert(NULL == m_pDataBlockMgr);
@@ -562,24 +564,24 @@ int clsNewMemKv::Init(
 	m_sPLogPath = sPLogPath;
 
 	int ret = m_pMemIdx->Init(
-			NEW_IDX_SHM_KEY, iIdxHeadSize, MAX_BLOCK, 
+			idxShmKey, iIdxHeadSize, MAX_BLOCK, 
 			"//clsNewMemKv/clsMemIdx::AllocLock");
 	if (0 != ret)
 	{
-		logerr("m_pMemIdx->Init NEW_IDX_SHM_KEY %d ret %d", 
-				NEW_IDX_SHM_KEY, ret);
+		logerr("m_pMemIdx->Init idxShmKey %d ret %d", 
+				idxShmKey, ret);
 		return -1;
 	}
 
-	m_pDataBlockMgr = new clsDataBlockMgr(NEW_DATA_BLOCK_SHM_KEY);
+	m_pDataBlockMgr = new clsDataBlockMgr(dataBlockShmKey);
 	// m_pDataBlockMgr = cutils::make_unique<clsDataBlockMgr>(NEW_DATA_BLOCK_SHM_KEY);
 	ret = m_pDataBlockMgr->Init(
 			"/home/qspace/data/kvsvr/memkv/datablockmgr_new.lock", 
 			iMaxAppendBlockNum);
 	if (0 != ret)
 	{
-		logerr("m_pDataBlockMgr->Init NEW_DATA_BLOCK_SHM_KEY %d ret %d", 
-				NEW_DATA_BLOCK_SHM_KEY, ret);
+		logerr("m_pDataBlockMgr->Init dataBlockShmKey %d ret %d", 
+				dataBlockShmKey, ret);
 		return -2;
 	}
 

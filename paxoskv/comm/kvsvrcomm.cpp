@@ -11,6 +11,8 @@
 
 #include <memory.h>
 #include <sys/time.h>
+#include <sys/syscall.h>
+#include <sched.h>
 #include <unistd.h>
 #include <cstdio>
 #include <cassert>
@@ -70,14 +72,14 @@ int GetCpuCount()
 void BindToCpu(int begin, int end)
 {
 #if !defined(__APPLE__)
-    cpu_set_t mark;
+    cpu_set_t mask;
     CPU_ZERO(&mask);
     for (int i = begin; i < end; ++i) {
         CPU_SET(i, &mask);
     }
 
     // get thread id
-    pid_t threadid = gettid();
+    pid_t threadid = syscall(SYS_gettid);
     sched_setaffinity(threadid, sizeof(mask), &mask);
 #endif
 }

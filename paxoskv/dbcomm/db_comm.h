@@ -12,6 +12,7 @@
 #pragma once
 
 #include <sys/types.h>
+#include <arpa/inet.h>
 #include <unistd.h>
 #include <string>
 #include <vector>

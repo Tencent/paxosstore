@@ -18,6 +18,7 @@
 #include <sys/types.h>
 #include <vector>
 #include <cassert>
+#include <cstdlib>
 #include "pthread.h"
 #include "memcomm.h"
 

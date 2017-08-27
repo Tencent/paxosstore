@@ -77,7 +77,10 @@ namespace paxoskv {
 
 clsHardMemKv::clsHardMemKv() = default;
 
-clsHardMemKv::~clsHardMemKv() = default;
+clsHardMemKv::~clsHardMemKv()
+{
+	mergetor_->Stop();
+}
 
 
 int clsHardMemKv::Init(const Option& option)
@@ -90,7 +93,9 @@ int clsHardMemKv::Init(const Option& option)
     ret = memkv_->Init(
             option.mem_idx_headsize, 
             option.db_plog_path.c_str(), 
-            option.mem_append_blknum);
+            option.mem_append_blknum,
+			option.idx_shm_key,
+			option.data_block_shm_key);
     if (0 != ret) {
         logerr("memkv::Init ret %d", ret);
         return ret;

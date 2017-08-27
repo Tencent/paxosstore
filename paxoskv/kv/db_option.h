@@ -47,6 +47,8 @@ struct Option {
     uint32_t mem_idx_headsize = 100 * 10000;
     uint32_t mem_append_blknum = 2;
     uint32_t mem_load_workercnt = 3;
+	int idx_shm_key = 2333333;
+	int data_block_shm_key = 6666666;
     // end of memkv : mem
 
     // memkv : bitcask

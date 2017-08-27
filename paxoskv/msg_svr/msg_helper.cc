@@ -152,6 +152,28 @@ void send_msg_worker(
 	return ;
 }
 
+void post_msg_worker(
+        size_t max_batch_size, 
+        PaxosMsgQueue& msg_queue, 
+        std::function<int(const paxos::Message&)> pfn_post_msg, 
+        bool& stop)
+{
+    bind_worker_cpu();
+
+    int ret = 0;
+    while (false == stop) {
+        auto msg = msg_queue.Pop();
+        assert(nullptr != msg);
+
+        ret = pfn_post_msg(*msg);
+        if (0 != ret) {
+            logerr("TEST: post_msg ret %d", ret);
+        }
+    }
+
+    return ;
+}
+
 
 
 } // namespace paxos

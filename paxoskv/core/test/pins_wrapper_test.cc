@@ -11,8 +11,9 @@
 
 #include <vector>
 #include "gtest/gtest.h"
-#include "pins_wrapper.h"
-#include "id_utils.h"
+#include "core/pins_wrapper.h"
+#include "core/plog_helper.h"
+#include "cutils/id_utils.h"
 #include "test_helper.h"
 
 
@@ -25,7 +26,7 @@ Message SimpleReqMsg()
 {
     Message msg;
     msg.set_index(test_index);
-    msg.set_logid(test_logid);
+    set_key(msg, test_logid);
     msg.set_from(2);
     msg.set_to(selfid);
     msg.set_proposed_num(
@@ -40,7 +41,7 @@ Message SimpleReqMsg()
 TEST(PInsAliveStateTest, SimpleConstruct)
 {
     PInsAliveState pins_state(
-			test_logid, test_index, 
+			paxos::to_paxos_key(test_logid), test_index, 
 			cutils::prop_num_compose(selfid, 1));
     assert(false == pins_state.IsChosen());
 }
@@ -52,6 +53,7 @@ TEST(PInsAliveStateTest, BeginProp)
     begin_prop_msg.set_type(MessageType::BEGIN_PROP);
     set_test_accepted_value(begin_prop_msg);
 
+    int ret = 0;
     bool write = false;
     MessageType rsp_msg_type = MessageType::NOOP;
     // case 1
@@ -59,11 +61,11 @@ TEST(PInsAliveStateTest, BeginProp)
         auto pins_state = EmptyPInsState(1);
         auto pins_impl = EmptyPIns(1);
 
-		assert(false == pins_impl.is_fast());
-		begin_prop_msg.set_logid(pins_state->GetLogID());
+		begin_prop_msg.set_key(pins_state->GetKey());
 		begin_prop_msg.set_index(pins_state->GetIndex());
         std::tie(write, rsp_msg_type) = 
             pins_state->Step(begin_prop_msg, pins_impl);
+        
         assert(true == write);
         assert(MessageType::PROP == rsp_msg_type);
 
@@ -74,7 +76,6 @@ TEST(PInsAliveStateTest, BeginProp)
         assert(false == pins_impl.has_accepted_value());
 
         assert(false == pins_state->IsChosen());
-		assert(pins_impl.is_fast());
         auto proposing_value = pins_state->TestProposingValue();
         assert(nullptr != proposing_value);
         assert(proposing_value->reqid() == 
@@ -94,6 +95,7 @@ TEST(PInsAliveStateTest, BeginProp)
         pins_impl.set_promised_num(cutils::prop_num_compose(2, 0));
         std::tie(write, rsp_msg_type) = 
             pins_state->Step(begin_prop_msg, pins_impl);
+        
         assert(false == write);
         assert(MessageType::NOOP == rsp_msg_type);
 
@@ -104,7 +106,6 @@ TEST(PInsAliveStateTest, BeginProp)
         assert(false == pins_impl.has_accepted_value());
 
         assert(false == pins_state->IsChosen());
-		assert(false == pins_impl.is_fast());
         assert(nullptr == pins_state->TestProposingValue());
     }
 }
@@ -115,6 +116,7 @@ TEST(PInsAliveStateTest, BeginFastProp)
     bfast_prop_msg.set_type(MessageType::BEGIN_FAST_PROP);
     set_test_accepted_value(bfast_prop_msg);
 
+    int ret = 0;
     bool write = false;
     MessageType rsp_msg_type = MessageType::NOOP;
     // case 1
@@ -122,10 +124,11 @@ TEST(PInsAliveStateTest, BeginFastProp)
         auto pins_state = EmptyPInsState(1);
         auto pins_impl = EmptyPIns(1);
 
-		bfast_prop_msg.set_logid(pins_state->GetLogID());
+		bfast_prop_msg.set_key(pins_state->GetKey());
 		bfast_prop_msg.set_index(pins_state->GetIndex());
         std::tie(write, rsp_msg_type) = 
             pins_state->Step(bfast_prop_msg, pins_impl);
+        
         assert(true == write);
         assert(MessageType::FAST_ACCPT == rsp_msg_type);
 
@@ -140,7 +143,6 @@ TEST(PInsAliveStateTest, BeginFastProp)
                 bfast_prop_msg.accepted_value());
 
         assert(false == pins_state->IsChosen());
-		assert(pins_impl.is_fast());
         auto proposing_value = pins_state->TestProposingValue();
         assert(nullptr != proposing_value);
         check_entry_equal(*proposing_value, 
@@ -158,6 +160,7 @@ TEST(PInsAliveStateTest, BeginFastProp)
         pins_impl.set_promised_num(cutils::prop_num_compose(2, 0));
         std::tie(write, rsp_msg_type) = 
             pins_state->Step(bfast_prop_msg, pins_impl);
+        
         assert(false == write);
         assert(MessageType::NOOP == rsp_msg_type);
 
@@ -168,7 +171,6 @@ TEST(PInsAliveStateTest, BeginFastProp)
         assert(false == pins_impl.has_accepted_value());
 
         assert(false == pins_state->IsChosen());
-		assert(false == pins_impl.is_fast());
         assert(nullptr == pins_state->TestProposingValue());
     }
 }
@@ -180,6 +182,7 @@ TEST(PInsAliveStateTest, TryProp)
     set_test_accepted_value(try_prop_msg);
     try_prop_msg.mutable_accepted_value()->set_reqid(0); // indicate try prop
 
+    int ret = 0;
     bool write = false;
     auto rsp_msg_type = MessageType::NOOP;
 
@@ -188,16 +191,16 @@ TEST(PInsAliveStateTest, TryProp)
         auto pins_state = EmptyPInsState(test_index);
         auto pins_impl = EmptyPIns(test_index);
 
-		try_prop_msg.set_logid(pins_state->GetLogID());
+		try_prop_msg.set_key(pins_state->GetKey());
 		try_prop_msg.set_index(pins_state->GetIndex());
 
         assert(PropState::NIL == pins_state->TestPropState());
         std::tie(write, rsp_msg_type) = 
             pins_state->Step(try_prop_msg, pins_impl);
+        
         assert(PropState::WAIT_PREPARE == pins_state->TestPropState());
         assert(true == write);
         assert(MessageType::PROP == rsp_msg_type);
-		assert(false == pins_impl.is_fast());
 
         assert(pins_impl.has_promised_num());
         assert(pins_impl.proposed_num() == pins_impl.promised_num());
@@ -206,13 +209,14 @@ TEST(PInsAliveStateTest, TryProp)
         uint64_t proposed_num = pins_impl.proposed_num();
         Message prop_rsp_msg;
         prop_rsp_msg.set_type(MessageType::PROP_RSP);
-		prop_rsp_msg.set_logid(pins_state->GetLogID());
+		prop_rsp_msg.set_key(pins_state->GetKey());
 		prop_rsp_msg.set_index(pins_state->GetIndex());
         prop_rsp_msg.set_from(2);
         prop_rsp_msg.set_proposed_num(proposed_num);
         prop_rsp_msg.set_promised_num(proposed_num);
         std::tie(write, rsp_msg_type) = 
             pins_state->Step(prop_rsp_msg, pins_impl);
+        
         assert(PropState::WAIT_ACCEPT == pins_state->TestPropState());
         assert(true == write);
         assert(MessageType::ACCPT == rsp_msg_type);
@@ -234,7 +238,7 @@ TEST(PInsAliveStateTest, TryProp)
         uint64_t proposed_num = pins_impl.proposed_num();
         Message prop_rsp_msg;
         prop_rsp_msg.set_type(MessageType::PROP_RSP);
-		prop_rsp_msg.set_logid(pins_state->GetLogID());
+		prop_rsp_msg.set_key(pins_state->GetKey());
 		prop_rsp_msg.set_index(pins_state->GetIndex());
         prop_rsp_msg.set_from(2);
         prop_rsp_msg.set_proposed_num(proposed_num);
@@ -244,11 +248,13 @@ TEST(PInsAliveStateTest, TryProp)
 
         std::tie(write, rsp_msg_type) = 
             pins_state->Step(prop_rsp_msg, pins_impl);
+        
         assert(PropState::WAIT_PREPARE == pins_state->TestPropState());
         assert(size_t{1} == pins_state->TestRspVotes().size());
 
         std::tie(write, rsp_msg_type) = 
             pins_state->Step(try_prop_msg, pins_impl);
+        
         assert(PropState::WAIT_PREPARE == pins_state->TestPropState());
         assert(true == write);
         assert(MessageType::PROP == rsp_msg_type);
@@ -268,7 +274,7 @@ TEST(PInsAliveStateTest, TryProp)
         uint64_t proposed_num = pins_impl.proposed_num();
         Message accpt_rsp_msg;
         accpt_rsp_msg.set_type(MessageType::ACCPT_RSP);
-		accpt_rsp_msg.set_logid(pins_state->GetLogID());
+		accpt_rsp_msg.set_key(pins_state->GetKey());
 		accpt_rsp_msg.set_index(pins_state->GetIndex());
         accpt_rsp_msg.set_from(2);
         accpt_rsp_msg.set_proposed_num(proposed_num);
@@ -278,11 +284,13 @@ TEST(PInsAliveStateTest, TryProp)
 
         std::tie(write, rsp_msg_type) = 
             pins_state->Step(accpt_rsp_msg, pins_impl);
+        
         assert(PropState::WAIT_ACCEPT == pins_state->TestPropState());
         assert(size_t{1} == pins_state->TestRspVotes().size());
 
         std::tie(write, rsp_msg_type) = 
             pins_state->Step(try_prop_msg, pins_impl);
+        
         assert(PropState::WAIT_PREPARE == pins_state->TestPropState());
         assert(true == write);
         assert(MessageType::PROP == rsp_msg_type);
@@ -303,7 +311,7 @@ TEST(PInsAliveStateTest, TryProp)
         uint64_t proposed_num = pins_impl.proposed_num();
         Message faccpt_rsp_msg;
         faccpt_rsp_msg.set_type(MessageType::FAST_ACCPT_RSP);
-		faccpt_rsp_msg.set_logid(pins_state->GetLogID());
+		faccpt_rsp_msg.set_key(pins_state->GetKey());
 		faccpt_rsp_msg.set_index(pins_state->GetIndex());
         faccpt_rsp_msg.set_from(2);
         faccpt_rsp_msg.set_proposed_num(proposed_num);
@@ -313,11 +321,13 @@ TEST(PInsAliveStateTest, TryProp)
 
         std::tie(write, rsp_msg_type) = 
             pins_state->Step(faccpt_rsp_msg, pins_impl);
+        
         assert(PropState::WAIT_ACCEPT == pins_state->TestPropState());
         assert(size_t{1} == pins_state->TestRspVotes().size());
 
         std::tie(write, rsp_msg_type) = 
             pins_state->Step(try_prop_msg, pins_impl);
+        
         assert(PropState::WAIT_PREPARE == pins_state->TestPropState());
         assert(true == write);
         assert(MessageType::PROP == rsp_msg_type);
@@ -327,6 +337,7 @@ TEST(PInsAliveStateTest, TryProp)
 
 TEST(PInsAliveStateTest, FastAccptRsp)
 {
+    int ret = 0;
     bool write = false;
     auto rsp_msg_type = MessageType::NOOP;
 
@@ -339,7 +350,7 @@ TEST(PInsAliveStateTest, FastAccptRsp)
         uint64_t proposed_num = pins_impl.proposed_num();
         Message faccpt_rsp_msg;
         faccpt_rsp_msg.set_type(MessageType::FAST_ACCPT_RSP);
-		faccpt_rsp_msg.set_logid(pins_state->GetLogID());
+		faccpt_rsp_msg.set_key(pins_state->GetKey());
 		faccpt_rsp_msg.set_index(pins_state->GetIndex());
         faccpt_rsp_msg.set_from(2);
         faccpt_rsp_msg.set_proposed_num(proposed_num);
@@ -347,8 +358,9 @@ TEST(PInsAliveStateTest, FastAccptRsp)
         // accepted
 
         assert(PropState::WAIT_ACCEPT == pins_state->TestPropState());
-        std::tie(write, rsp_msg_type) = 
+        std::tie( write, rsp_msg_type) = 
             pins_state->Step(faccpt_rsp_msg, pins_impl);
+        
         assert(PropState::CHOSEN == pins_state->TestPropState());
         assert(false == write);
         assert(MessageType::CHOSEN == rsp_msg_type);
@@ -357,7 +369,6 @@ TEST(PInsAliveStateTest, FastAccptRsp)
         assert(pins_state->TestRspVotes().empty());
         assert(test_reqid == pins_impl.accepted_value().reqid());
         assert(test_value == pins_impl.accepted_value().data());
-		assert(pins_impl.is_fast());
     }
 
     // case 2 ignore
@@ -368,19 +379,19 @@ TEST(PInsAliveStateTest, FastAccptRsp)
 
         Message faccpt_rsp_msg;
         faccpt_rsp_msg.set_type(MessageType::FAST_ACCPT_RSP);
-		faccpt_rsp_msg.set_logid(pins_state->GetLogID());
+		faccpt_rsp_msg.set_key(pins_state->GetKey());
 		faccpt_rsp_msg.set_index(pins_state->GetIndex());
         faccpt_rsp_msg.set_from(2);
         faccpt_rsp_msg.set_proposed_num(
                 cutils::prop_num_compose(2, 0));
 
-        std::tie(write, rsp_msg_type) = 
+        std::tie( write, rsp_msg_type) = 
             pins_state->Step(faccpt_rsp_msg, pins_impl);
+        
         assert(false == write);
         assert(MessageType::NOOP == rsp_msg_type);
         assert(PropState::WAIT_ACCEPT == pins_state->TestPropState());
         assert(pins_state->TestRspVotes().empty());
-		assert(pins_impl.is_fast());
     }
 
     // case 3 reject
@@ -389,11 +400,10 @@ TEST(PInsAliveStateTest, FastAccptRsp)
         PaxosInstance pins_impl;
         std::tie(pins_state, pins_impl) = WaitFastAccptRsp();
 
-		assert(pins_impl.is_fast());
         uint64_t proposed_num = pins_impl.proposed_num();
         Message faccpt_rsp_msg;
         faccpt_rsp_msg.set_type(MessageType::FAST_ACCPT_RSP);
-		faccpt_rsp_msg.set_logid(pins_state->GetLogID());
+		faccpt_rsp_msg.set_key(pins_state->GetKey());
 		faccpt_rsp_msg.set_index(pins_state->GetIndex());
         faccpt_rsp_msg.set_from(2);
         faccpt_rsp_msg.set_proposed_num(proposed_num);
@@ -402,13 +412,13 @@ TEST(PInsAliveStateTest, FastAccptRsp)
         assert(faccpt_rsp_msg.accepted_num() > proposed_num);
 
         // reject
-        std::tie(write, rsp_msg_type) = 
+        std::tie( write, rsp_msg_type) = 
             pins_state->Step(faccpt_rsp_msg, pins_impl);
+        
         assert(false == write);
         assert(MessageType::NOOP == rsp_msg_type);
         assert(PropState::WAIT_ACCEPT == pins_state->TestPropState());
         assert(size_t{1} == pins_state->TestRspVotes().size());
-		assert(pins_impl.is_fast());
 
         auto pins_state_bak = pins_state->TestClone();
         auto pins_impl_bak = pins_impl;
@@ -419,32 +429,31 @@ TEST(PInsAliveStateTest, FastAccptRsp)
             assert(faccpt_rsp_msg.accepted_num() > faccpt_rsp_msg.proposed_num());
 
             assert(PropState::WAIT_ACCEPT == pins_state->TestPropState());
-            std::tie(write, rsp_msg_type) = 
+            std::tie( write, rsp_msg_type) = 
                 pins_state->Step(faccpt_rsp_msg, pins_impl);
+            
             assert(PropState::WAIT_PREPARE == pins_state->TestPropState());
             assert(true == write);
             assert(MessageType::PROP == rsp_msg_type);
             assert(pins_state->TestRspVotes().empty());
-			assert(false == pins_impl.is_fast());
         }
 
         pins_state = std::move(pins_state_bak);
         pins_impl = pins_impl_bak;
         faccpt_rsp_msg = faccpt_rsp_msg_bak;
-		assert(pins_impl.is_fast());
 
         // redundance reject msg
         assert(faccpt_rsp_msg.accepted_num() > faccpt_rsp_msg.proposed_num());
 
         assert(PropState::WAIT_ACCEPT == pins_state->TestPropState());
         assert(size_t{1} == pins_state->TestRspVotes().size());
-        std::tie(write, rsp_msg_type) = 
+        std::tie( write, rsp_msg_type) = 
             pins_state->Step(faccpt_rsp_msg, pins_impl);
+        
         assert(PropState::WAIT_ACCEPT == pins_state->TestPropState());
         assert(false == write);
         assert(MessageType::NOOP == rsp_msg_type);
         assert(size_t{1} == pins_state->TestRspVotes().size());
-		assert(pins_impl.is_fast());
 
         {
             // accpt
@@ -452,14 +461,14 @@ TEST(PInsAliveStateTest, FastAccptRsp)
             faccpt_rsp_msg.set_accepted_num(faccpt_rsp_msg.proposed_num());
 
             assert(PropState::WAIT_ACCEPT == pins_state->TestPropState());
-            std::tie(write, rsp_msg_type) = 
+            std::tie( write, rsp_msg_type) = 
                 pins_state->Step(faccpt_rsp_msg, pins_impl);
+            
             assert(PropState::CHOSEN == pins_state->TestPropState());
             assert(false == write);
             assert(MessageType::CHOSEN == rsp_msg_type);
             assert(pins_state->IsChosen());
             assert(nullptr == pins_state->TestProposingValue());
-			assert(pins_impl.is_fast());
         }
     }
 
@@ -472,7 +481,7 @@ TEST(PInsAliveStateTest, FastAccptRsp)
         uint64_t proposed_num = pins_impl.proposed_num();
         Message faccpt_rsp_msg;
         faccpt_rsp_msg.set_type(MessageType::FAST_ACCPT_RSP);
-		faccpt_rsp_msg.set_logid(pins_state->GetLogID());
+		faccpt_rsp_msg.set_key(pins_state->GetKey());
 		faccpt_rsp_msg.set_index(pins_state->GetIndex());
         faccpt_rsp_msg.set_from(2);
         faccpt_rsp_msg.set_proposed_num(proposed_num);
@@ -482,8 +491,9 @@ TEST(PInsAliveStateTest, FastAccptRsp)
                 cutils::PropNumGen(3, 0).Next(proposed_num));
 
         // reject
-        std::tie(write, rsp_msg_type) = 
+        std::tie( write, rsp_msg_type) = 
             pins_state->Step(faccpt_rsp_msg, pins_impl);
+        
         assert(false == write);
         assert(MessageType::NOOP == rsp_msg_type);
         assert(PropState::WAIT_ACCEPT == pins_state->TestPropState());
@@ -495,6 +505,7 @@ TEST(PInsAliveStateTest, FastAccptRsp)
 
 TEST(PInsAliveStateTest, AccptRsp)
 {
+    int ret = 0;
     bool write = false;
     auto rsp_msg_type = MessageType::NOOP;
 
@@ -507,7 +518,7 @@ TEST(PInsAliveStateTest, AccptRsp)
         uint64_t proposed_num = pins_impl.proposed_num();
         Message accpt_rsp_msg;
         accpt_rsp_msg.set_type(MessageType::ACCPT_RSP);
-		accpt_rsp_msg.set_logid(pins_state->GetLogID());
+		accpt_rsp_msg.set_key(pins_state->GetKey());
 		accpt_rsp_msg.set_index(pins_state->GetIndex());
         accpt_rsp_msg.set_from(2);
         accpt_rsp_msg.set_proposed_num(proposed_num);
@@ -515,8 +526,9 @@ TEST(PInsAliveStateTest, AccptRsp)
         // accepted
 
         assert(PropState::WAIT_ACCEPT == pins_state->TestPropState());
-        std::tie(write, rsp_msg_type) = 
+        std::tie( write, rsp_msg_type) = 
             pins_state->Step(accpt_rsp_msg, pins_impl);
+        
         assert(PropState::CHOSEN == pins_state->TestPropState());
         assert(false == write);
         assert(MessageType::CHOSEN == rsp_msg_type);
@@ -525,7 +537,6 @@ TEST(PInsAliveStateTest, AccptRsp)
         assert(pins_state->TestRspVotes().empty());
         assert(test_reqid == pins_impl.accepted_value().reqid());
         assert(test_value == pins_impl.accepted_value().data());
-		assert(pins_impl.is_fast());
 
         // pins_state mark as chosen, nomore msg!!
     }
@@ -538,7 +549,7 @@ TEST(PInsAliveStateTest, AccptRsp)
 
         Message accpt_rsp_msg;
         accpt_rsp_msg.set_type(MessageType::ACCPT_RSP);
-		accpt_rsp_msg.set_logid(pins_state->GetLogID());
+		accpt_rsp_msg.set_key(pins_state->GetKey());
 		accpt_rsp_msg.set_index(pins_state->GetIndex());
         accpt_rsp_msg.set_from(2);
         accpt_rsp_msg.set_proposed_num(
@@ -547,14 +558,14 @@ TEST(PInsAliveStateTest, AccptRsp)
         assert(accpt_rsp_msg.proposed_num() != pins_impl.proposed_num());
 
         // ingore
-        std::tie(write, rsp_msg_type) = 
+        std::tie( write, rsp_msg_type) = 
             pins_state->Step(accpt_rsp_msg, pins_impl);
+        
         assert(PropState::WAIT_ACCEPT == pins_state->TestPropState());
         assert(false == write);
         assert(MessageType::NOOP == rsp_msg_type);
         assert(false == pins_state->IsChosen());
         assert(pins_state->TestRspVotes().empty());
-		assert(pins_impl.is_fast());
     }
 
     // case 3 reject
@@ -563,11 +574,10 @@ TEST(PInsAliveStateTest, AccptRsp)
         PaxosInstance pins_impl;
         std::tie(pins_state, pins_impl) = WaitAccptRsp(1);
 
-		assert(pins_impl.is_fast());
         uint64_t proposed_num = pins_impl.proposed_num();
         Message accpt_rsp_msg;
         accpt_rsp_msg.set_type(MessageType::ACCPT_RSP);
-		accpt_rsp_msg.set_logid(pins_state->GetLogID());
+		accpt_rsp_msg.set_key(pins_state->GetKey());
 		accpt_rsp_msg.set_index(pins_state->GetIndex());
         accpt_rsp_msg.set_from(2);
         accpt_rsp_msg.set_proposed_num(proposed_num);
@@ -576,13 +586,13 @@ TEST(PInsAliveStateTest, AccptRsp)
         assert(accpt_rsp_msg.accepted_num() > proposed_num);
 
         // reject
-        std::tie(write, rsp_msg_type) = 
+        std::tie( write, rsp_msg_type) = 
             pins_state->Step(accpt_rsp_msg, pins_impl);
+        
         assert(false == write);
         assert(MessageType::NOOP == rsp_msg_type);
         assert(PropState::WAIT_ACCEPT == pins_state->TestPropState());
         assert(size_t{1} == pins_state->TestRspVotes().size());
-		assert(pins_impl.is_fast());
 
         auto pins_state_bak = pins_state->TestClone();
         auto pins_impl_bak = pins_impl;
@@ -593,26 +603,26 @@ TEST(PInsAliveStateTest, AccptRsp)
             assert(accpt_rsp_msg.accepted_num() > 
                     accpt_rsp_msg.proposed_num());
             assert(PropState::WAIT_ACCEPT == pins_state->TestPropState());
-            std::tie(write, rsp_msg_type) = 
+            std::tie( write, rsp_msg_type) = 
                 pins_state->Step(accpt_rsp_msg, pins_impl);
+            
             assert(PropState::WAIT_PREPARE == pins_state->TestPropState());
             assert(true == write);
             assert(MessageType::PROP == rsp_msg_type);
             assert(pins_state->TestRspVotes().empty());
-			assert(false == pins_impl.is_fast());
         }
 
         pins_state = std::move(pins_state_bak);
         pins_impl = pins_impl_bak;
         accpt_rsp_msg = accpt_rsp_msg_bak;
-		assert(pins_impl.is_fast());
         {
             // accpt
             accpt_rsp_msg.set_from(3);
             accpt_rsp_msg.set_accepted_num(accpt_rsp_msg.proposed_num());
             assert(PropState::WAIT_ACCEPT == pins_state->TestPropState());
-            std::tie(write, rsp_msg_type) = 
+            std::tie( write, rsp_msg_type) = 
                 pins_state->Step(accpt_rsp_msg, pins_impl);
+            
             assert(PropState::CHOSEN == pins_state->TestPropState());
             assert(false == write);
             assert(MessageType::CHOSEN == rsp_msg_type);
@@ -621,7 +631,6 @@ TEST(PInsAliveStateTest, AccptRsp)
             assert(pins_state->TestRspVotes().empty());
             assert(test_reqid == pins_impl.accepted_value().reqid());
             assert(test_value == pins_impl.accepted_value().data());
-			assert(pins_impl.is_fast());
         }
     }
 
@@ -634,7 +643,7 @@ TEST(PInsAliveStateTest, AccptRsp)
         uint64_t proposed_num = pins_impl.proposed_num();
         Message accpt_rsp_msg;
         accpt_rsp_msg.set_type(MessageType::ACCPT_RSP);
-		accpt_rsp_msg.set_logid(pins_state->GetLogID());
+		accpt_rsp_msg.set_key(pins_state->GetKey());
 		accpt_rsp_msg.set_index(pins_state->GetIndex());
         accpt_rsp_msg.set_from(2);
         accpt_rsp_msg.set_proposed_num(proposed_num);
@@ -646,8 +655,9 @@ TEST(PInsAliveStateTest, AccptRsp)
         assert(accpt_rsp_msg.promised_num() > accpt_rsp_msg.proposed_num());
 
         // reject
-        std::tie(write, rsp_msg_type) = 
+        std::tie( write, rsp_msg_type) = 
             pins_state->Step(accpt_rsp_msg, pins_impl);
+        
         assert(false == write);
         assert(MessageType::NOOP == rsp_msg_type);
         assert(PropState::WAIT_ACCEPT == pins_state->TestPropState());
@@ -659,6 +669,7 @@ TEST(PInsAliveStateTest, AccptRsp)
 
 TEST(PInsAliveStateTest, PropRsp)
 {
+    int ret = 0;
     bool write = false;
     auto rsp_msg_type = MessageType::NOOP;
     // case 1
@@ -670,7 +681,7 @@ TEST(PInsAliveStateTest, PropRsp)
         uint64_t proposed_num = pins_impl.proposed_num();
         Message prop_rsp_msg;
         prop_rsp_msg.set_type(MessageType::PROP_RSP);
-		prop_rsp_msg.set_logid(pins_state->GetLogID());
+		prop_rsp_msg.set_key(pins_state->GetKey());
 		prop_rsp_msg.set_index(pins_state->GetIndex());
         prop_rsp_msg.set_from(2);
         prop_rsp_msg.set_proposed_num(proposed_num);
@@ -680,8 +691,9 @@ TEST(PInsAliveStateTest, PropRsp)
 
         assert(PropState::WAIT_PREPARE == pins_state->TestPropState());
         assert(false == pins_impl.has_accepted_num());
-        std::tie(write, rsp_msg_type) = 
+        std::tie( write, rsp_msg_type) = 
             pins_state->Step(prop_rsp_msg, pins_impl);
+        
         assert(PropState::WAIT_ACCEPT == pins_state->TestPropState());
         assert(true == write);
         assert(MessageType::ACCPT == rsp_msg_type);
@@ -694,14 +706,14 @@ TEST(PInsAliveStateTest, PropRsp)
         prop_rsp_msg.set_from(3);
         prop_rsp_msg.set_promised_num(
                 cutils::prop_num_compose(2, 1));
-        std::tie(write, rsp_msg_type) = 
+        std::tie( write, rsp_msg_type) = 
             pins_state->Step(prop_rsp_msg, pins_impl);
+        
         assert(false == write);
         assert(MessageType::NOOP == rsp_msg_type);
         assert(PropState::WAIT_ACCEPT == pins_state->TestPropState());
         assert(pins_state->TestRspVotes().empty());
 
-		assert(pins_impl.is_fast());
         //assert(pins_state->GetStrictPropFlag());
     }
 
@@ -715,20 +727,20 @@ TEST(PInsAliveStateTest, PropRsp)
         assert(proposed_num != pins_impl.proposed_num());
         Message prop_rsp_msg;
         prop_rsp_msg.set_type(MessageType::PROP_RSP);
-		prop_rsp_msg.set_logid(pins_state->GetLogID());
+		prop_rsp_msg.set_key(pins_state->GetKey());
 		prop_rsp_msg.set_index(pins_state->GetIndex());
         prop_rsp_msg.set_from(2);
         prop_rsp_msg.set_proposed_num(proposed_num);
         prop_rsp_msg.set_promised_num(proposed_num);
 
-        std::tie(write, rsp_msg_type) = 
+        std::tie( write, rsp_msg_type) = 
             pins_state->Step(prop_rsp_msg, pins_impl);
+        
         assert(false == write);
         assert(MessageType::NOOP == rsp_msg_type);
         assert(false == pins_impl.has_accepted_num());
         assert(PropState::WAIT_PREPARE == pins_state->TestPropState());
         assert(true == pins_state->TestRspVotes().empty());
-		assert(pins_impl.is_fast());
         // assert(pins_state->GetStrictPropFlag());
     }
 
@@ -738,12 +750,11 @@ TEST(PInsAliveStateTest, PropRsp)
 		std::unique_ptr<paxos::PInsAliveState> pins_state;
         PaxosInstance pins_impl;
         std::tie(pins_state, pins_impl) = WaitPropRsp();
-		assert(pins_impl.is_fast());
 
         uint64_t proposed_num = pins_impl.proposed_num();
         Message prop_rsp_msg;
         prop_rsp_msg.set_type(MessageType::PROP_RSP);
-		prop_rsp_msg.set_logid(pins_state->GetLogID());
+		prop_rsp_msg.set_key(pins_state->GetKey());
 		prop_rsp_msg.set_index(pins_state->GetIndex());
         prop_rsp_msg.set_from(2);
         prop_rsp_msg.set_proposed_num(proposed_num);
@@ -753,14 +764,14 @@ TEST(PInsAliveStateTest, PropRsp)
         assert(prop_rsp_msg.promised_num() > proposed_num);
 
         assert(PropState::WAIT_PREPARE == pins_state->TestPropState());
-        std::tie(write, rsp_msg_type) = 
+        std::tie( write, rsp_msg_type) = 
             pins_state->Step(prop_rsp_msg, pins_impl);
+        
         assert(PropState::WAIT_PREPARE == pins_state->TestPropState());
         assert(false == write);
         assert(MessageType::NOOP == rsp_msg_type);
         assert(false == pins_impl.has_accepted_num());
         assert(size_t{1} == pins_state->TestRspVotes().size());
-		assert(pins_impl.is_fast());
 
         // case 3.1
         auto pins_state_bak = pins_state->TestClone();
@@ -772,13 +783,13 @@ TEST(PInsAliveStateTest, PropRsp)
                     pins_impl.proposed_num());
             // reject
             assert(PropState::WAIT_PREPARE == pins_state->TestPropState());
-            std::tie(write, rsp_msg_type) =
+            std::tie( write, rsp_msg_type) =
                 pins_state->Step(prop_rsp_msg, pins_impl);
+            
             assert(true == write);
             assert(MessageType::PROP == rsp_msg_type);
             assert(PropState::WAIT_PREPARE == pins_state->TestPropState());
             assert(true == pins_state->TestRspVotes().empty());
-			assert(false == pins_impl.is_fast());
             // assert(pins_state->GetStrictPropFlag());;
         }
 
@@ -786,14 +797,14 @@ TEST(PInsAliveStateTest, PropRsp)
         pins_state = std::move(pins_state_bak);
         pins_impl = pins_impl_bak;
         prop_rsp_msg = prop_rsp_msg_bak;
-		assert(pins_impl.is_fast());
         {
             prop_rsp_msg.set_from(3);
             prop_rsp_msg.set_promised_num(prop_rsp_msg.proposed_num());
             // promised
             assert(PropState::WAIT_PREPARE == pins_state->TestPropState());
-            std::tie(write, rsp_msg_type) = 
+            std::tie( write, rsp_msg_type) = 
                 pins_state->Step(prop_rsp_msg, pins_impl);
+            
             assert(true == write);
             assert(MessageType::ACCPT == rsp_msg_type);
             assert(PropState::WAIT_ACCEPT == pins_state->TestPropState());
@@ -801,7 +812,6 @@ TEST(PInsAliveStateTest, PropRsp)
 
             assert(pins_impl.has_accepted_num());
             assert(pins_impl.has_accepted_value());
-			assert(pins_impl.is_fast());
             //assert(pins_state->GetStrictPropFlag());
         }
     }
@@ -813,11 +823,10 @@ TEST(PInsAliveStateTest, PropRsp)
         std::tie(pins_state, pins_impl) = WaitPropRsp();
 
         // assert(pins_state->GetStrictPropFlag());
-		assert(pins_impl.is_fast());
         uint64_t proposed_num = pins_impl.proposed_num();
         Message prop_rsp_msg;
         prop_rsp_msg.set_type(MessageType::PROP_RSP);
-		prop_rsp_msg.set_logid(pins_state->GetLogID());
+		prop_rsp_msg.set_key(pins_state->GetKey());
 		prop_rsp_msg.set_index(pins_state->GetIndex());
         prop_rsp_msg.set_from(2);
         prop_rsp_msg.set_proposed_num(proposed_num);
@@ -829,8 +838,9 @@ TEST(PInsAliveStateTest, PropRsp)
 
         assert(PropState::WAIT_PREPARE == pins_state->TestPropState());
         assert(false == pins_impl.has_accepted_num());
-        std::tie(write, rsp_msg_type) = 
+        std::tie( write, rsp_msg_type) = 
             pins_state->Step(prop_rsp_msg, pins_impl);
+        
         assert(PropState::WAIT_ACCEPT == pins_state->TestPropState());
         assert(true == write);
         assert(MessageType::ACCPT == rsp_msg_type);
@@ -843,14 +853,13 @@ TEST(PInsAliveStateTest, PropRsp)
         assert(test_reqid != pins_state->TestProposingValue()->reqid());
         assert(prop_rsp_msg.accepted_num() == 
                 pins_state->TestMaxAcceptedHintNum());
-		assert(pins_impl.is_fast());
         // assert(false == pins_state->GetStrictPropFlag());
     }
 }
 
 namespace {
 
-PaxosInstance FullPIns()
+PaxosInstance FullPIns(bool chosen=true)
 {
     PaxosInstance pins_impl;
     pins_impl.set_index(test_index);
@@ -864,6 +873,7 @@ PaxosInstance FullPIns()
         entry->set_reqid(test_reqid);
         entry->set_data(test_value);
     }
+    pins_impl.set_chosen(chosen);
     return pins_impl;
 }
 
@@ -874,14 +884,16 @@ TEST(PInsWrapperTest, SimpleConstruct)
     // not chosen
     {
         PaxosInstance pins_impl;
-        PInsWrapper pins_wrapper(false, nullptr, pins_impl);
+        PInsWrapper pins_wrapper(nullptr, pins_impl);
         assert(false == pins_wrapper.IsChosen());
     }
 
     // chosen
     {
         PaxosInstance pins_impl;
-        PInsWrapper pins_wrapper(true, nullptr, pins_impl);
+        set_test_accepted_value(pins_impl);
+        pins_impl.set_chosen(true);
+        PInsWrapper pins_wrapper(nullptr, pins_impl);
         assert(true == pins_wrapper.IsChosen());
     }
 }
@@ -889,9 +901,10 @@ TEST(PInsWrapperTest, SimpleConstruct)
 TEST(PInsWrapperTest, ChosenStepMsg)
 {
     PaxosInstance pins_impl = FullPIns();
-    PInsWrapper pins_wrapper(true, nullptr, pins_impl);
+    PInsWrapper pins_wrapper(nullptr, pins_impl);
     assert(true == pins_wrapper.IsChosen());
 
+    int ret = 0;
     bool write = false;
     std::unique_ptr<Message> rsp_msg = nullptr;
     // case 1
@@ -900,7 +913,8 @@ TEST(PInsWrapperTest, ChosenStepMsg)
         req_msg.set_type(MessageType::CHOSEN);
         req_msg.set_index(pins_impl.index());
 
-        std::tie(write, rsp_msg) = pins_wrapper.Step(req_msg);
+        std::tie(ret, write, rsp_msg) = pins_wrapper.Step(req_msg);
+        
         assert(false == write);
         assert(nullptr == rsp_msg);
     }
@@ -921,17 +935,17 @@ TEST(PInsWrapperTest, ChosenStepMsg)
             Message req_msg;
             req_msg.set_type(msg_type);
             req_msg.set_index(pins_impl.index());
-            req_msg.set_logid(test_logid);
+            set_key(req_msg, test_logid);
             req_msg.set_from(2);
             req_msg.set_to(selfid);
 
-            std::tie(write, rsp_msg) = pins_wrapper.Step(req_msg);
+            std::tie(ret, write, rsp_msg) = pins_wrapper.Step(req_msg);
+            
             assert(false == write);
             assert(nullptr != rsp_msg);
 
             assert(MessageType::CHOSEN == rsp_msg->type());
             assert(rsp_msg->index() == pins_impl.index());
-            assert(rsp_msg->logid() == test_logid);
             assert(rsp_msg->to() == 2);
             assert(rsp_msg->from() == selfid);
             assert(rsp_msg->has_promised_num());
@@ -947,6 +961,7 @@ TEST(PInsWrapperTest, NotChosenStepChosenMsg)
 {
     PaxosInstance pins_impl = FullPIns();
 
+    int ret = 0;
     bool write = false;
     std::unique_ptr<Message> rsp_msg = nullptr;
 
@@ -968,10 +983,11 @@ TEST(PInsWrapperTest, NotChosenStepChosenMsg)
     {
         // case 1.1 accepted_num match
         {
-            PInsWrapper pins_wrapper(false, nullptr, pins_impl);
+            PInsWrapper pins_wrapper(nullptr, pins_impl);
             assert(false == pins_wrapper.IsChosen());
 
-            std::tie(write, rsp_msg) = pins_wrapper.Step(chosen_msg);
+            std::tie(ret, write, rsp_msg) = pins_wrapper.Step(chosen_msg);
+            
             assert(false == write);
             assert(nullptr == rsp_msg);
             assert(pins_wrapper.IsChosen());
@@ -979,12 +995,13 @@ TEST(PInsWrapperTest, NotChosenStepChosenMsg)
 
         // case 1.2 accepted_num don't match
         {
-            pins_impl = FullPIns();
-            PInsWrapper pins_wrapper(false, nullptr, pins_impl);
+            pins_impl = FullPIns(false);
+            PInsWrapper pins_wrapper(nullptr, pins_impl);
             assert(false == pins_wrapper.IsChosen());
 
             auto old_proposed_num = pins_impl.proposed_num();
-            std::tie(write, rsp_msg) = pins_wrapper.Step(nmchosen_msg);
+            std::tie(ret, write, rsp_msg) = pins_wrapper.Step(nmchosen_msg);
+            
             assert(true == write);
             assert(nullptr == rsp_msg);
             assert(pins_wrapper.IsChosen());
@@ -1002,15 +1019,15 @@ TEST(PInsWrapperTest, NotChosenStepChosenMsg)
         
         // case 2.1
         {
-            pins_impl = FullPIns(); // reset
+            pins_impl = FullPIns(false); // reset
 
             auto pins_state = EmptyPInsState(pins_impl.index());
-            PInsWrapper pins_wrapper(false, pins_state.get(), pins_impl);
+            PInsWrapper pins_wrapper(pins_state.get(), pins_impl);
             assert(false == pins_wrapper.IsChosen());
             assert(false == pins_state->IsChosen());
 
             auto old_proposed_num = pins_impl.proposed_num();
-            std::tie(write, rsp_msg) = pins_wrapper.Step(chosen_msg);
+            std::tie(ret, write, rsp_msg) = pins_wrapper.Step(chosen_msg);
             assert(false == write);
             assert(nullptr == rsp_msg);
             assert(pins_wrapper.IsChosen());
@@ -1020,12 +1037,12 @@ TEST(PInsWrapperTest, NotChosenStepChosenMsg)
 
         // case 2.2
         {
-            pins_impl = FullPIns();
+            pins_impl = FullPIns(false);
             auto pins_state = EmptyPInsState(pins_impl.index());
-            PInsWrapper pins_wrapper(false, pins_state.get(), pins_impl);
+            PInsWrapper pins_wrapper(pins_state.get(), pins_impl);
 
             auto old_proposed_num = pins_impl.proposed_num();
-            std::tie(write, rsp_msg) = pins_wrapper.Step(nmchosen_msg);
+            std::tie(ret, write, rsp_msg) = pins_wrapper.Step(nmchosen_msg);
             assert(true == write);
             assert(nullptr == rsp_msg);
             assert(pins_wrapper.IsChosen());
@@ -1041,6 +1058,7 @@ TEST(PInsWrapperTest, NotChosenStepChosenMsg)
 
 TEST(PInsWrapperTest, NotChosenStepPropMsg)
 {
+    int ret = 0;
     bool write = false;
     std::unique_ptr<Message> rsp_msg = nullptr;
 
@@ -1049,17 +1067,17 @@ TEST(PInsWrapperTest, NotChosenStepPropMsg)
     prop_msg.set_index(test_index);
     prop_msg.set_proposed_num(
             cutils::prop_num_compose(2, 10));
-    prop_msg.set_logid(test_logid);
+    set_key(prop_msg, test_logid);
     prop_msg.set_from(2);
     prop_msg.set_to(selfid);
 
     // case 1 promised => empty stat
     {
         auto pins_impl = EmptyPIns(test_index);
-        PInsWrapper pins_wrapper(false, nullptr, pins_impl);
+        PInsWrapper pins_wrapper(nullptr, pins_impl);
         
         assert(false == pins_impl.has_promised_num());
-        std::tie(write, rsp_msg) = pins_wrapper.Step(prop_msg);
+        std::tie(ret, write, rsp_msg) = pins_wrapper.Step(prop_msg);
         assert(true == write);
         assert(nullptr != rsp_msg);
         assert(pins_impl.has_promised_num());
@@ -1070,7 +1088,7 @@ TEST(PInsWrapperTest, NotChosenStepPropMsg)
         // indicate => promised
         assert(prop_msg.proposed_num() == rsp_msg->promised_num());
         assert(prop_msg.index() == rsp_msg->index());
-        assert(prop_msg.logid() == rsp_msg->logid());
+        assert(prop_msg.key() == rsp_msg->key());
         assert(prop_msg.to() == rsp_msg->from());
         assert(prop_msg.from() == rsp_msg->to());
     }
@@ -1081,10 +1099,10 @@ TEST(PInsWrapperTest, NotChosenStepPropMsg)
         pins_impl.set_promised_num(
                 cutils::prop_num_compose(3, 1));
         assert(pins_impl.promised_num() < prop_msg.proposed_num());
-        PInsWrapper pins_wrapper(false, nullptr, pins_impl);
+        PInsWrapper pins_wrapper(nullptr, pins_impl);
 
         uint64_t prev_promised_num = pins_impl.promised_num();
-        std::tie(write, rsp_msg) = pins_wrapper.Step(prop_msg);
+        std::tie(ret, write, rsp_msg) = pins_wrapper.Step(prop_msg);
         assert(true == write);
         assert(nullptr != rsp_msg);
         assert(prev_promised_num < pins_impl.promised_num());
@@ -1102,10 +1120,10 @@ TEST(PInsWrapperTest, NotChosenStepPropMsg)
         pins_impl.set_promised_num(
                 cutils::PropNumGen(3, 0).Next(prop_msg.proposed_num()));
         assert(pins_impl.promised_num() > prop_msg.proposed_num());
-        PInsWrapper pins_wrapper(false, nullptr, pins_impl);
+        PInsWrapper pins_wrapper(nullptr, pins_impl);
 
         uint64_t prev_promised_num = pins_impl.promised_num();
-        std::tie(write, rsp_msg) = pins_wrapper.Step(prop_msg);
+        std::tie(ret, write, rsp_msg) = pins_wrapper.Step(prop_msg);
         assert(false == write);
         assert(nullptr != rsp_msg);
         assert(prev_promised_num == pins_impl.promised_num());
@@ -1119,6 +1137,7 @@ TEST(PInsWrapperTest, NotChosenStepPropMsg)
 
 TEST(PInsWrapperTest, NotChosenStepAccptMsg)
 {
+    int ret = 0;
     bool write = false;
     std::unique_ptr<Message> rsp_msg = nullptr;
 
@@ -1128,9 +1147,9 @@ TEST(PInsWrapperTest, NotChosenStepAccptMsg)
     // case 1 accepted => empty stat
     {
         auto pins_impl = EmptyPIns(test_index);
-        PInsWrapper pins_wrapper(false, nullptr, pins_impl);
+        PInsWrapper pins_wrapper(nullptr, pins_impl);
 
-        std::tie(write, rsp_msg) = pins_wrapper.Step(accpt_msg);
+        std::tie(ret, write, rsp_msg) = pins_wrapper.Step(accpt_msg);
         assert(true == write);
         assert(nullptr != rsp_msg);
         assert(pins_impl.has_promised_num());
@@ -1146,7 +1165,7 @@ TEST(PInsWrapperTest, NotChosenStepAccptMsg)
         assert(accpt_msg.proposed_num() == rsp_msg->accepted_num());
         assert(false == rsp_msg->has_promised_num());
         assert(accpt_msg.index() == rsp_msg->index());
-        assert(accpt_msg.logid() == rsp_msg->logid());
+        assert(accpt_msg.key() == rsp_msg->key());
         assert(accpt_msg.to() == rsp_msg->from());
         assert(accpt_msg.from() == rsp_msg->to());
     }
@@ -1166,9 +1185,10 @@ TEST(PInsWrapperTest, NotChosenStepAccptMsg)
         }
         assert(pins_impl.accepted_value().reqid() != 
                 accpt_msg.accepted_value().reqid());
-        PInsWrapper pins_wrapper(false, nullptr, pins_impl);
+        PInsWrapper pins_wrapper(nullptr, pins_impl);
 
-        std::tie(write, rsp_msg) = pins_wrapper.Step(accpt_msg);
+        std::tie(ret, write, rsp_msg) = pins_wrapper.Step(accpt_msg);
+        
         assert(true == write);
         assert(nullptr != rsp_msg);
         assert(old_proposed_num < pins_impl.promised_num());
@@ -1185,9 +1205,10 @@ TEST(PInsWrapperTest, NotChosenStepAccptMsg)
         assert(old_proposed_num > accpt_msg.proposed_num());
         pins_impl.set_promised_num(old_proposed_num);
         assert(false == pins_impl.has_accepted_num());
-        PInsWrapper pins_wrapper(false, nullptr, pins_impl);
+        PInsWrapper pins_wrapper(nullptr, pins_impl);
 
-        std::tie(write, rsp_msg) = pins_wrapper.Step(accpt_msg);
+        std::tie(ret, write, rsp_msg) = pins_wrapper.Step(accpt_msg);
+        
         assert(false == write);
         assert(nullptr != rsp_msg);
         assert(MessageType::ACCPT_RSP == rsp_msg->type());
@@ -1215,9 +1236,10 @@ TEST(PInsWrapperTest, NotChosenStepAccptMsg)
             entry->set_reqid(test_reqid + test_reqid);
             entry->set_data(test_value + test_value);
         }
-        PInsWrapper pins_wrapper(false, nullptr, pins_impl);
+        PInsWrapper pins_wrapper(nullptr, pins_impl);
 
-        std::tie(write, rsp_msg) = pins_wrapper.Step(accpt_msg);
+        std::tie(ret, write, rsp_msg) = pins_wrapper.Step(accpt_msg);
+        
         assert(false == write);
         assert(nullptr != rsp_msg);
         assert(MessageType::ACCPT_RSP == rsp_msg->type());
@@ -1231,6 +1253,7 @@ TEST(PInsWrapperTest, NotChosenStepAccptMsg)
 
 TEST(PInsWrapperTest, NotChosenStepFastAccptMsg)
 {
+    int ret = 0;
     bool write = false;
     std::unique_ptr<Message> rsp_msg = nullptr;
 
@@ -1240,9 +1263,10 @@ TEST(PInsWrapperTest, NotChosenStepFastAccptMsg)
     // case 1: fast accpt => empty stat
     {
         auto pins_impl = EmptyPIns(test_index);
-        PInsWrapper pins_wrapper(false, nullptr, pins_impl);
+        PInsWrapper pins_wrapper(nullptr, pins_impl);
 
-        std::tie(write, rsp_msg) = pins_wrapper.Step(faccpt_msg);
+        std::tie(ret, write, rsp_msg) = pins_wrapper.Step(faccpt_msg);
+        
         assert(true == write);
         assert(nullptr != rsp_msg);
         assert(pins_impl.has_promised_num());
@@ -1265,9 +1289,10 @@ TEST(PInsWrapperTest, NotChosenStepFastAccptMsg)
         uint64_t old_proposed_num = cutils::prop_num_compose(3, 0);
         assert(old_proposed_num < faccpt_msg.proposed_num());
         pins_impl.set_promised_num(old_proposed_num);
-        PInsWrapper pins_wrapper(false, nullptr, pins_impl);
+        PInsWrapper pins_wrapper(nullptr, pins_impl);
 
-        std::tie(write, rsp_msg) = pins_wrapper.Step(faccpt_msg);
+        std::tie(ret, write, rsp_msg) = pins_wrapper.Step(faccpt_msg);
+        
         assert(true == write);
         assert(nullptr != rsp_msg);
         assert(old_proposed_num < pins_impl.promised_num());
@@ -1288,9 +1313,10 @@ TEST(PInsWrapperTest, NotChosenStepFastAccptMsg)
             entry->set_reqid(test_reqid + test_reqid);
             entry->set_data(test_value + test_value);
         }
-        PInsWrapper pins_wrapper(false, nullptr, pins_impl);
+        PInsWrapper pins_wrapper(nullptr, pins_impl);
 
-        std::tie(write, rsp_msg) = pins_wrapper.Step(faccpt_msg);
+        std::tie(ret, write, rsp_msg) = pins_wrapper.Step(faccpt_msg);
+        
         assert(false == write);
         assert(nullptr != rsp_msg);
         assert(MessageType::FAST_ACCPT_RSP == rsp_msg->type());
@@ -1307,9 +1333,10 @@ TEST(PInsWrapperTest, NotChosenStepFastAccptMsg)
         assert(old_proposed_num > faccpt_msg.proposed_num());
         pins_impl.set_promised_num(old_proposed_num);
         assert(false == pins_impl.has_accepted_num());
-        PInsWrapper pins_wrapper(false, nullptr, pins_impl);
+        PInsWrapper pins_wrapper(nullptr, pins_impl);
 
-        std::tie(write, rsp_msg) = pins_wrapper.Step(faccpt_msg);
+        std::tie(ret, write, rsp_msg) = pins_wrapper.Step(faccpt_msg);
+        
         assert(false == write);
         assert(nullptr != rsp_msg);
         assert(MessageType::FAST_ACCPT_RSP == rsp_msg->type());
@@ -1333,9 +1360,10 @@ TEST(PInsWrapperTest, NotChosenStepFastAccptMsg)
             entry->set_reqid(test_reqid + test_reqid);
             entry->set_data(test_value + test_value);
         }
-        PInsWrapper pins_wrapper(false, nullptr, pins_impl);
+        PInsWrapper pins_wrapper(nullptr, pins_impl);
 
-        std::tie(write, rsp_msg) = pins_wrapper.Step(faccpt_msg);
+        std::tie(ret, write, rsp_msg) = pins_wrapper.Step(faccpt_msg);
+        
         assert(false == write);
         assert(nullptr != rsp_msg);
         assert(MessageType::FAST_ACCPT_RSP == rsp_msg->type());
@@ -1347,21 +1375,23 @@ TEST(PInsWrapperTest, NotChosenStepFastAccptMsg)
 
 TEST(PInsWrapperTest, NotChosenStepBeginPropMsg)
 {
+    int ret = 0;
     bool write = false;
     std::unique_ptr<Message> rsp_msg = nullptr;
 
     Message begin_prop_msg;
     begin_prop_msg.set_type(MessageType::BEGIN_PROP);
-    begin_prop_msg.set_logid(test_logid);
+    set_key(begin_prop_msg, test_logid);
     begin_prop_msg.set_index(test_index);
     begin_prop_msg.set_to(selfid);
     set_test_accepted_value(begin_prop_msg);
 
     auto pins_impl = EmptyPIns(test_index);
     auto pins_state = EmptyPInsState(pins_impl.index());
-    PInsWrapper pins_wrapper(false, pins_state.get(), pins_impl);
+    PInsWrapper pins_wrapper(pins_state.get(), pins_impl);
 
-    std::tie(write, rsp_msg) = pins_wrapper.Step(begin_prop_msg);
+    std::tie(ret, write, rsp_msg) = pins_wrapper.Step(begin_prop_msg);
+    
     assert(true == write);
     assert(nullptr != rsp_msg);
     assert(0 < pins_impl.proposed_num());
@@ -1369,7 +1399,6 @@ TEST(PInsWrapperTest, NotChosenStepBeginPropMsg)
     assert(pins_impl.promised_num() == pins_impl.proposed_num());
 
     assert(MessageType::PROP == rsp_msg->type());
-    assert(test_logid == rsp_msg->logid());
     assert(test_index == rsp_msg->index());
     assert(0 == rsp_msg->to()); // broad-cast
     assert(rsp_msg->proposed_num() == pins_impl.proposed_num());
@@ -1377,21 +1406,23 @@ TEST(PInsWrapperTest, NotChosenStepBeginPropMsg)
 
 TEST(PInsWrapperTest, NotChosenStepBeginFastPropMsg)
 {
+    int ret = 0;
     bool write = false;
     std::unique_ptr<Message> rsp_msg = nullptr;
 
     Message fbegin_prop_msg;
     fbegin_prop_msg.set_type(MessageType::BEGIN_FAST_PROP);
-    fbegin_prop_msg.set_logid(test_logid);
+    set_key(fbegin_prop_msg, test_logid);
     fbegin_prop_msg.set_index(test_index);
     fbegin_prop_msg.set_to(selfid);
     set_test_accepted_value(fbegin_prop_msg);
 
     auto pins_impl = EmptyPIns(test_index);
     auto pins_state = EmptyPInsState(pins_impl.index());
-    PInsWrapper pins_wrapper(false, pins_state.get(), pins_impl);
+    PInsWrapper pins_wrapper(pins_state.get(), pins_impl);
 
-    std::tie(write, rsp_msg) = pins_wrapper.Step(fbegin_prop_msg);
+    std::tie(ret, write, rsp_msg) = pins_wrapper.Step(fbegin_prop_msg);
+    
     assert(true == write);
     assert(nullptr != rsp_msg);
     assert(0 < pins_impl.proposed_num());
@@ -1401,7 +1432,6 @@ TEST(PInsWrapperTest, NotChosenStepBeginFastPropMsg)
             fbegin_prop_msg.accepted_value(), pins_impl.accepted_value());
 
     assert(MessageType::FAST_ACCPT == rsp_msg->type());
-    assert(test_logid == rsp_msg->logid());
     assert(test_index == rsp_msg->index());
     assert(0 == rsp_msg->to());
     assert(rsp_msg->proposed_num() == pins_impl.proposed_num());
@@ -1413,12 +1443,13 @@ TEST(PInsWrapperTest, NotChosenStepBeginFastPropMsg)
 
 TEST(PInsWrapperTest, NotChosenStepTryPropMsg)
 {
+    int ret = 0;
     bool write = false;
     std::unique_ptr<Message> rsp_msg = nullptr;
 
     Message try_prop_msg;
     try_prop_msg.set_type(MessageType::TRY_PROP);
-    try_prop_msg.set_logid(test_logid);
+    set_key(try_prop_msg, test_logid);
     try_prop_msg.set_index(test_index);
     try_prop_msg.set_to(selfid);
     set_test_accepted_value(try_prop_msg);
@@ -1427,9 +1458,10 @@ TEST(PInsWrapperTest, NotChosenStepTryPropMsg)
 
     auto pins_impl = EmptyPIns(test_index);
     auto pins_state = EmptyPInsState(pins_impl.index());
-    PInsWrapper pins_wrapper(false, pins_state.get(), pins_impl);
+    PInsWrapper pins_wrapper(pins_state.get(), pins_impl);
 
-    std::tie(write, rsp_msg) = pins_wrapper.Step(try_prop_msg);
+    std::tie(ret, write, rsp_msg) = pins_wrapper.Step(try_prop_msg);
+    
     assert(true == write);
     assert(nullptr != rsp_msg);
     assert(0 < pins_impl.proposed_num());
@@ -1437,7 +1469,6 @@ TEST(PInsWrapperTest, NotChosenStepTryPropMsg)
     assert(false == pins_impl.has_accepted_num());
 
     assert(MessageType::PROP == rsp_msg->type());
-    assert(test_logid == rsp_msg->logid());
     assert(test_index == rsp_msg->index());
     assert(0 == rsp_msg->to());
     assert(rsp_msg->proposed_num() == pins_impl.proposed_num());
@@ -1445,6 +1476,7 @@ TEST(PInsWrapperTest, NotChosenStepTryPropMsg)
 
 TEST(PInsWrapperTest, NotChosenStepPropRspMsg)
 {
+    int ret = 0;
     bool write = false;
     std::unique_ptr<Message> rsp_msg = nullptr;
 
@@ -1452,10 +1484,10 @@ TEST(PInsWrapperTest, NotChosenStepPropRspMsg)
     PaxosInstance pins_impl;
     std::tie(pins_state, pins_impl) = WaitPropRsp();
 
-    PInsWrapper pins_wrapper(false, pins_state.get(), pins_impl);
+    PInsWrapper pins_wrapper(pins_state.get(), pins_impl);
     Message prop_rsp_msg;
     prop_rsp_msg.set_type(MessageType::PROP_RSP);
-    prop_rsp_msg.set_logid(test_logid);
+    set_key(prop_rsp_msg, test_logid);
     prop_rsp_msg.set_index(test_index);
     prop_rsp_msg.set_from(2);
     prop_rsp_msg.set_to(selfid);
@@ -1466,7 +1498,8 @@ TEST(PInsWrapperTest, NotChosenStepPropRspMsg)
             cutils::PropNumGen(3, 0).Next(pins_impl.proposed_num()));
     assert(prop_rsp_msg.promised_num() > pins_impl.proposed_num());
 
-    std::tie(write, rsp_msg) = pins_wrapper.Step(prop_rsp_msg);
+    std::tie(ret, write, rsp_msg) = pins_wrapper.Step(prop_rsp_msg);
+    
     assert(false == write);
     assert(nullptr == rsp_msg);
 
@@ -1474,11 +1507,11 @@ TEST(PInsWrapperTest, NotChosenStepPropRspMsg)
     prop_rsp_msg.set_from(3);
     prop_rsp_msg.set_promised_num(prop_rsp_msg.proposed_num());
     
-    std::tie(write, rsp_msg) = pins_wrapper.Step(prop_rsp_msg);
+    std::tie(ret, write, rsp_msg) = pins_wrapper.Step(prop_rsp_msg);
+    
     assert(true == write);
     assert(nullptr != rsp_msg);
     assert(MessageType::ACCPT == rsp_msg->type());
-    assert(test_logid == rsp_msg->logid());
     assert(test_index == rsp_msg->index());
     assert(selfid == rsp_msg->from());
     assert(0 == rsp_msg->to());
@@ -1488,6 +1521,7 @@ TEST(PInsWrapperTest, NotChosenStepPropRspMsg)
 
 TEST(PInsWrapperTest, NotChosenStepAccptRspMsg)
 {
+    int ret = 0;
     bool write = false;
     std::unique_ptr<Message> rsp_msg = nullptr;
 
@@ -1495,10 +1529,10 @@ TEST(PInsWrapperTest, NotChosenStepAccptRspMsg)
     PaxosInstance pins_impl;
     std::tie(pins_state, pins_impl) = WaitAccptRsp(1);
 
-    PInsWrapper pins_wrapper(false, pins_state.get(), pins_impl);
+    PInsWrapper pins_wrapper(pins_state.get(), pins_impl);
     Message accpt_rsp_msg;
     accpt_rsp_msg.set_type(MessageType::ACCPT_RSP);
-    accpt_rsp_msg.set_logid(test_logid);
+    set_key(accpt_rsp_msg, test_logid);
     accpt_rsp_msg.set_index(test_index);
     accpt_rsp_msg.set_from(2);
     accpt_rsp_msg.set_to(selfid);
@@ -1510,7 +1544,8 @@ TEST(PInsWrapperTest, NotChosenStepAccptRspMsg)
             cutils::PropNumGen(3, 0).Next(pins_impl.proposed_num()));
     assert(accpt_rsp_msg.promised_num() > pins_impl.proposed_num());
 
-    std::tie(write, rsp_msg) = pins_wrapper.Step(accpt_rsp_msg);
+    std::tie(ret, write, rsp_msg) = pins_wrapper.Step(accpt_rsp_msg);
+    
     assert(false == write);
     assert(nullptr == rsp_msg);
 
@@ -1519,13 +1554,13 @@ TEST(PInsWrapperTest, NotChosenStepAccptRspMsg)
     accpt_rsp_msg.clear_promised_num();
     accpt_rsp_msg.set_accepted_num(accpt_rsp_msg.proposed_num());
     assert(accpt_rsp_msg.proposed_num() == pins_impl.proposed_num());
-    std::tie(write, rsp_msg) = pins_wrapper.Step(accpt_rsp_msg);
+    std::tie(ret, write, rsp_msg) = pins_wrapper.Step(accpt_rsp_msg);
+    
     assert(false == write); // mark chosen, but not need write disk
     assert(nullptr != rsp_msg);
     assert(MessageType::CHOSEN == rsp_msg->type());
     assert(pins_wrapper.IsChosen());
     assert(pins_state->IsChosen());
-    assert(test_logid == rsp_msg->logid());
     assert(test_index == rsp_msg->index());
     assert(selfid == rsp_msg->from());
     assert(0 == rsp_msg->to());
@@ -1534,6 +1569,7 @@ TEST(PInsWrapperTest, NotChosenStepAccptRspMsg)
 
 TEST(PInsWrapperTest, NotChosenStepFastAccptRspMsg)
 {
+    int ret = 0;
     bool write = false;
     std::unique_ptr<Message> rsp_msg = nullptr;
 
@@ -1541,10 +1577,10 @@ TEST(PInsWrapperTest, NotChosenStepFastAccptRspMsg)
     PaxosInstance pins_impl;
     std::tie(pins_state, pins_impl) = WaitFastAccptRsp();
 
-    PInsWrapper pins_wrapper(false, pins_state.get(), pins_impl);
+    PInsWrapper pins_wrapper(pins_state.get(), pins_impl);
     Message faccpt_rsp_msg;
     faccpt_rsp_msg.set_type(MessageType::FAST_ACCPT_RSP);
-    faccpt_rsp_msg.set_logid(test_logid);
+    set_key(faccpt_rsp_msg, test_logid);
     faccpt_rsp_msg.set_index(test_index);
     faccpt_rsp_msg.set_from(2);
     faccpt_rsp_msg.set_to(selfid);
@@ -1556,7 +1592,8 @@ TEST(PInsWrapperTest, NotChosenStepFastAccptRspMsg)
             cutils::PropNumGen(3, 0).Next(pins_impl.proposed_num()));
     assert(faccpt_rsp_msg.promised_num() > pins_impl.proposed_num());
 
-    std::tie(write, rsp_msg) = pins_wrapper.Step(faccpt_rsp_msg);
+    std::tie(ret, write, rsp_msg) = pins_wrapper.Step(faccpt_rsp_msg);
+    
     assert(false == write);
     assert(nullptr == rsp_msg);
 
@@ -1566,13 +1603,13 @@ TEST(PInsWrapperTest, NotChosenStepFastAccptRspMsg)
     faccpt_rsp_msg.set_accepted_num(faccpt_rsp_msg.proposed_num());
     assert(faccpt_rsp_msg.proposed_num() == pins_impl.proposed_num());
 
-    std::tie(write, rsp_msg) = pins_wrapper.Step(faccpt_rsp_msg);
+    std::tie(ret, write, rsp_msg) = pins_wrapper.Step(faccpt_rsp_msg);
+    
     assert(false == write);
     assert(nullptr != rsp_msg);
     assert(MessageType::CHOSEN == rsp_msg->type());
     assert(pins_wrapper.IsChosen());
     assert(pins_state->IsChosen());
-    assert(test_logid == rsp_msg->logid());
     assert(test_index == rsp_msg->index());
     assert(selfid == rsp_msg->from());
     assert(0 == rsp_msg->to());

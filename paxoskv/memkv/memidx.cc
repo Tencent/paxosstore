@@ -9,6 +9,8 @@
 
 
 
+#include <cstring>
+
 #include "dbcomm/hashlock.h"
 #include "cutils/log_utils.h"
 #include "cutils/hash_utils.h"

@@ -10,15 +10,17 @@
 
 
 
+#include <cstdio>
+#include <cstdlib>
 #include <cassert>
+#include <string>
 #include "dbcomm/db_comm.h"
 #include "hard_memkv.h"
 #include "db_option.h"
+#include "core/paxos.pb.h"
 
 
 
-
-    
     int
 main ( int argc, char *argv[] )
 {
@@ -33,6 +35,34 @@ main ( int argc, char *argv[] )
     auto ret = hmemkv.Init(option);
     assert(0 == ret);
 
+	uint64_t logid = rand();
+	std::string key;
+	key.resize(sizeof(logid));
+	memcpy((void*)(key.data()), &logid, sizeof(logid));
+	paxos::PaxosLogHeader header, header2;
+	paxos::PaxosLog plog, plog2;
+
+	ret = hmemkv.Read(key, header, plog);
+	printf("Read %lu: ret %d, max_index: %lu\n", 
+			logid, ret, header.max_index());
+
+	header.set_max_index(100);
+	plog.clear_entries();
+	auto paxosInstance = plog.add_entries();
+	paxosInstance->set_index(100);
+	assert(plog.entries_size() == 1);
+
+	ret = hmemkv.Write(key, header, plog);
+	printf("Write %lu: ret %d\n", logid, ret);
+
+	ret = hmemkv.Read(key, header2, plog2);
+	printf("Read %lu: ret %d, max_index: %lu\n", 
+			logid, ret, header2.max_index());
+
+	assert(ret == 0);
+	assert(header2.max_index() == 100);
+	assert(plog2.entries_size() == 1);
+	assert(plog2.entries(0).index() == 100);
 
     return EXIT_SUCCESS;
 }				/* ----------  end of function main  ---------- */

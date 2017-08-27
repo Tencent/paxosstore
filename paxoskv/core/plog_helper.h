@@ -19,6 +19,8 @@ namespace paxos {
 class PaxosLog;
 class PaxosInstance;
 
+std::string to_paxos_key(uint64_t logid);
+
 uint64_t get_min_index(const paxos::PaxosLog& plog);
 
 uint64_t get_max_index(const paxos::PaxosLog& plog);

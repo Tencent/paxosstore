@@ -49,7 +49,7 @@ int HashBaseLock::Init(const char *sPath, uint32_t iLockCount) {
     pthread_rwlockattr_t attr;
 
     iLockNum = cutils::bkdr_hash(sPath);
-    snprintf(m_sLockPath, sizeof(m_sLockPath), "./%u.kvlock", iLockNum);
+    snprintf(m_sLockPath, sizeof(m_sLockPath), "/%u.kvlock", iLockNum);
     logerr("kvlock: %s %u", sPath, iLockNum);
 
     ret = pthread_rwlockattr_init(&attr);
@@ -92,7 +92,7 @@ int HashBaseLock::Attach(const char *sPath, uint32_t iLockCount) {
     pthread_rwlockattr_t attr;
 
     iLockNum = cutils::bkdr_hash(sPath);
-    snprintf(m_sLockPath, sizeof(m_sLockPath), "./%u.rkvlock", iLockNum);
+    snprintf(m_sLockPath, sizeof(m_sLockPath), "/%u.rkvlock", iLockNum);
     logerr("kvlock: %s %u", sPath, iLockNum);
 
     ret = pthread_rwlockattr_init(&attr);

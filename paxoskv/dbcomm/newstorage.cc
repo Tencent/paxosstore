@@ -809,7 +809,7 @@ int NewStorage::BatchAdd(
 
 	int iEstimateRecordSize = CalculateDumpSize(pRecords, iCount);
 
-	uint32_t iOldFileNo = m_pstMaxWritePos->pos->iFileNo;
+	//uint32_t iOldFileNo = m_pstMaxWritePos->pos->iFileNo;
 	uint64_t llBeginTime = dbcomm::GetTickMS();
 	WriteHelper oHelper(
 			m_poAddBaseLock, m_pstMaxWritePos);
@@ -844,7 +844,7 @@ int NewStorage::AddImpl(
 	
     int iEstimateRecordSize = dbimpl::CalculateRecordSize(tRecord);
 
-	uint32_t iOldFileNo = m_pstMaxWritePos->pos->iFileNo;
+	//uint32_t iOldFileNo = m_pstMaxWritePos->pos->iFileNo;
 
 	uint64_t llBeginTime = dbcomm::GetTickMS();
 	WriteHelper oHelper(

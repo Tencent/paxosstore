@@ -10,6 +10,7 @@
 
 
 #include <cassert>
+#include <string>
 #include "snappy.h"
 #include "db_comm.h"
 #include "db_compresse.h"
@@ -61,7 +62,7 @@ bool MayCompresse(
 }
 
 
-int Compresse::MayUnCompresse(
+int MayUnCompresse(
 		const char* pRawValue, 
 		uint32_t iRawValLen, const uint8_t cFlag, 
 		std::string& sUnCompresseBuffer)

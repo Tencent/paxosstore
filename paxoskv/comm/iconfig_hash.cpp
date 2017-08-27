@@ -186,7 +186,7 @@ ConfigHashTable :: ConfigHashTable() {
 
 ConfigHashTable :: ConfigHashTable(int iHashSize)
 {
-	if ( (iHashSize & (-iHashSize )) == iHashSize )/*changed by 2012/7/30 */
+	if ( (iHashSize & (-iHashSize )) == iHashSize )/*changed by calvinzang 2012/7/30 */
 		HASH_SIZE = iHashSize;
 	else {
 		HASH_SIZE = 1;

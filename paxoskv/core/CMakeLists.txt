@@ -18,10 +18,13 @@ include_directories(${PROTOBUF_INCLUDE_DIR})
 PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS paxos.proto)
 
 
-include_directories(../)
+#include_directories(../)
+
 include_directories("${PROJECT_BINARY_DIR}")
 #include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 add_library(paxoskv_core STATIC ${SOURCES} ${PROTO_SRCS} ${PROTO_HDRS})
 target_link_libraries(paxoskv_core ${PROTOBUF_LIBRARIES} pthread)
 
+ 
+add_subdirectory(test) 

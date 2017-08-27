@@ -13,6 +13,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <sys/syscall.h>
 #include <fcntl.h>
 #include <sched.h>
 #include <cstring>
@@ -119,14 +120,14 @@ int get_cpu_count()
 void bind_to_cpu(int begin, int end)
 {
 #if !defined(__APPLE__)
-    cpu_set_t mark;
+    cpu_set_t mask;
     CPU_ZERO(&mask);
     for (int i = begin; i < end; ++i) {
         CPU_SET(i, &mask);
     }
 
     // get thread id
-    pid_t threadid = gettid();
+    pid_t threadid = syscall(SYS_gettid);
     sched_setaffinity(threadid, sizeof(mask), &mask);
 #endif
 }

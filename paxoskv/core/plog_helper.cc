@@ -35,6 +35,16 @@ bool is_peer_chosen(uint8_t peer_status)
 
 namespace paxos {
 
+std::string to_paxos_key(uint64_t logid)
+{
+    std::string key;
+    key.resize(sizeof(uint64_t));
+    memcpy(&key[0], &logid, sizeof(uint64_t));
+    return key;
+}
+
+
+
 uint64_t get_min_index(const paxos::PaxosLog& plog)
 {
     return 0 == plog.entries_size() ? 0: plog.entries(0).index();
@@ -163,6 +173,7 @@ paxos::PaxosLog zeros_plog()
     auto zeros_ins = plog.add_entries();
     assert(nullptr != zeros_ins);
     zeros_ins->set_index(0);
+	return plog;
 }
 
 

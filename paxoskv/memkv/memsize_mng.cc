@@ -26,7 +26,7 @@ clsMemSizeMng::clsMemSizeMng() {
     FILE *fp = fopen("/proc/meminfo", "r");
 
     m_llUseSize = 0;
-    m_llReserveSize = 6 * _1G;
+    m_llReserveSize = 1 * _1G;
     if (nullptr == fp) {
         m_llReserveSize = 1 * _1G;
         m_llTotalSize = 3 * _1G;

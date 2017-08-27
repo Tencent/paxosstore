@@ -178,7 +178,6 @@ void ActiveTimeoutWorker(
 
 		assert(false == mapTimeout.empty());
 		llProcessCnt += mapTimeout.size();
-		uint32_t iAddTimeoutCnt = 0;
 		for (const auto entry : mapTimeout) {
             const std::string& key = entry.first;
 			uint64_t llIndex = std::get<0>(entry.second);
