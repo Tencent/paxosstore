@@ -562,10 +562,11 @@ int clsNewMemKv::Init(
 	assert(0 == m_iIdxHeadSize % iLockSize);
 
 	m_sPLogPath = sPLogPath;
-
+    std::string sMemIdxLocKPath = std::string(m_sPLogPath) + "/clsMemIdx::AllockLock";
 	int ret = m_pMemIdx->Init(
 			idxShmKey, iIdxHeadSize, MAX_BLOCK, 
-			"//clsNewMemKv/clsMemIdx::AllocLock");
+            sMemIdxLocKPath.c_str());
+			// "//clsNewMemKv/clsMemIdx::AllocLock");
 	if (0 != ret)
 	{
 		logerr("m_pMemIdx->Init idxShmKey %d ret %d", 
@@ -575,8 +576,10 @@ int clsNewMemKv::Init(
 
 	m_pDataBlockMgr = new clsDataBlockMgr(dataBlockShmKey);
 	// m_pDataBlockMgr = cutils::make_unique<clsDataBlockMgr>(NEW_DATA_BLOCK_SHM_KEY);
+    std::string sDataBlockMgrLockPath = std::string(m_sPLogPath) + "datablockmgr_new.lock";
 	ret = m_pDataBlockMgr->Init(
-			"/home/qspace/data/kvsvr/memkv/datablockmgr_new.lock", 
+            sDataBlockMgrLockPath.c_str(), 
+			// "/home/qspace/data/kvsvr/memkv/datablockmgr_new.lock", 
 			iMaxAppendBlockNum);
 	if (0 != ret)
 	{
@@ -585,7 +588,8 @@ int clsNewMemKv::Init(
 		return -2;
 	}
 
-	const std::string sLockPath = "/home/qspace/data/kvsvr/memkv/memkv_new.lock";
+	// const std::string sLockPath = "/home/qspace/data/kvsvr/memkv/memkv_new.lock";
+    const std::string sLockPath = m_sPLogPath + "/memkv_new.lock";
 	m_pHashBaseLock = new dbcomm::HashBaseLock;
 	// m_pHashBaseLock = cutils::make_unique<HashBaseLock>();
 	ret = m_pHashBaseLock->Init(sLockPath.c_str(), iLockSize);
@@ -823,7 +827,8 @@ int clsNewMemKv::Get(
 	case 0:
 		{
 			memset(&tBasicInfo, 0, sizeof(tBasicInfo));
-            oPLog = paxos::zeros_plog();
+            // oPLog = paxos::zeros_plog();
+            oPLog = paxos::PaxosLog();
 		}
 		break;
 	default:
@@ -1005,6 +1010,7 @@ int clsNewMemKv::Set(
 
 	assert(NULL != m_pHashBaseLock);
 	assert(NULL != m_pMemIdx);
+
     dbcomm::HashLock hashlock(
 			m_pHashBaseLock, HashFunc(tMemKey.sKey, tMemKey.cKeyLen));
 	hashlock.WriteLock();

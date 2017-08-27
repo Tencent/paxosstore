@@ -31,7 +31,7 @@ struct Option {
 
     std::string db_path = "/home/qspace/data/kvsvr/";
     std::string db_plog_path = "/home/qspace/data/kvsvr/data/";
-    uint32_t db_lock_size = 100 * 10000;
+    uint32_t db_lock_size = 1000;
 
     uint32_t max_set_timeout = 100;
     uint32_t lo_max_track_size = 1000;
@@ -44,7 +44,7 @@ struct Option {
 
 
     // memkv : mem
-    uint32_t mem_idx_headsize = 100 * 10000;
+    uint32_t mem_idx_headsize = 1000;
     uint32_t mem_append_blknum = 2;
     uint32_t mem_load_workercnt = 3;
 	int idx_shm_key = 2333333;

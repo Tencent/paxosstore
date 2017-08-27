@@ -35,6 +35,7 @@
 
 const int MaxQueueSize = 10000;
 
+
 struct KVSvrConfig
 {
 	std::string str_ip;
@@ -115,9 +116,9 @@ paxoskv::Option fake_option(int member_id)
     option.db_plog_path.assign(dbPlogPath);
     assert(0 == dbcomm::CheckAndFixDirPath(option.db_path));
 
-	option.idx_shm_key = (0x202020 | member_id) << 4;
-	option.data_block_shm_key = (0x303030 | member_id) << 4;
-	printf("SHM %x %x\n", option.idx_shm_key, option.data_block_shm_key);
+	option.idx_shm_key = (0x202020 + member_id) << 8;
+	option.data_block_shm_key = (0x303030 + member_id) << 8;
+	printf("member_id %d SHM %x %x\n", member_id, option.idx_shm_key, option.data_block_shm_key);
 
     return option;
 }
@@ -162,7 +163,9 @@ void BuildMsgQueue(const KVSvrConfig& config, const std::map<int, KVSvrConfig>& 
 			std::to_string(config.member_id) + "_", MaxQueueSize);
 }
 
-void LaunchKVSvr(const KVSvrConfig& config, const std::map<int, KVSvrConfig>& globalConfig, bool& stop)
+void LaunchKVSvr(
+        const KVSvrConfig& config, 
+        const std::map<int, KVSvrConfig>& globalConfig, bool& stop)
 {
 	std::vector<std::unique_ptr<cutils::AsyncWorker>> vec_works;
     std::map<int, std::unique_ptr<paxos::PaxosMsgQueue>> map_recv_queue;
@@ -234,9 +237,10 @@ void LaunchKVSvr(const KVSvrConfig& config, const std::map<int, KVSvrConfig>& gl
 			key.assign((char*)(&logid), sizeof(uint64_t));
 
 			uint64_t forward_reqid = 0;
-			uint32_t  new_version = 0;
-			ret = db_impl.Set(key, "wechat", 0, forward_reqid, new_version);
-			printf("set: %d, ret: %d, %lu %u\n", 
+			uint32_t new_version = 0;
+			ret = db_impl.Set(
+                    key, "wechat", nullptr, forward_reqid, new_version);
+			printf("=> INFO set: %d, ret: %d, %lu %u\n", 
 					config.member_id, ret, forward_reqid, new_version);
 		}
 	}
@@ -250,7 +254,8 @@ int main(int argc, char* agrv[])
 	for (const auto& config : kvsvrConfigs)
 	{
 		auto svr = cutils::make_unique<cutils::AsyncWorker>(
-				LaunchKVSvr, config.second, kvsvrConfigs);
+				LaunchKVSvr, 
+                config.second, kvsvrConfigs);
 		vec_works.push_back(std::move(svr));
 	}
 

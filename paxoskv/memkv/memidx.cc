@@ -234,6 +234,7 @@ KeyNodePtr clsMemIdx::BlockAlloc(int iBlockID) {
     SpinLock spinlock(m_poSpinLock, iBlockID);
 
     KeyBlock_t *pstBlock = m_aKeyBlock[iBlockID];
+    assert(nullptr != pstBlock);
     KeyNodePtr stFree = pstBlock->stFree;
     if (stFree.IsNULL()) return stFree;
 
@@ -250,7 +251,13 @@ int clsMemIdx::AllocBlock() {
         return -1;
     }
 
-    InitBlock(m_pstMemIdxInfo->iUseBlock);
+    int ret = InitBlock(m_pstMemIdxInfo->iUseBlock);
+    if (0 != ret) {
+        logerr("InitBlock iUseBlock %d ret %d", 
+                m_pstMemIdxInfo->iUseBlock, ret);
+        assert(0 > ret);
+        return ret;
+    }
     int iBlockID = m_pstMemIdxInfo->iUseBlock;
     m_pstMemIdxInfo->iUseBlock++;
 
@@ -287,7 +294,14 @@ KeyNodePtr clsMemIdx::Alloc() {
             return NULLPtr;
         }
 
-        InitBlock(m_pstMemIdxInfo->iUseBlock);
+        int ret = InitBlock(m_pstMemIdxInfo->iUseBlock);
+        if (0 != ret) {
+            logerr("InitBlock iUseBlock %u ret %d", 
+                    m_pstMemIdxInfo->iUseBlock, ret);
+            KeyNodePtr NULLPtr;
+            return NULLPtr;
+        }
+
         m_pstMemIdxInfo->iCurBlock = m_pstMemIdxInfo->iUseBlock;
         m_pstMemIdxInfo->iUseBlock++;
 

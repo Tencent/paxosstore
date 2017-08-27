@@ -49,7 +49,7 @@ message DBData {
 
 message Entry {
     required uint64    reqid = 1;
-    required string    data  = 2;
+    required bytes   data  = 2;
 }
 
 message Message {

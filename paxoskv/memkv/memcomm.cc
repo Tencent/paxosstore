@@ -208,7 +208,9 @@ int HeadWrapper::GetBasicInfo(NewBasic_t& tBasicInfo) const {
     auto max_ins = paxos::get_max_ins(oPLog);
     if (nullptr != max_ins) {
         tBasicInfo.llMaxIndex = max_ins->index();
-        tBasicInfo.cState = PENDING;
+        if (false == max_ins->chosen()) {
+            tBasicInfo.cState = PENDING;
+        }
     }
 
     assert(tBasicInfo.llMaxIndex >= tBasicInfo.llChosenIndex);

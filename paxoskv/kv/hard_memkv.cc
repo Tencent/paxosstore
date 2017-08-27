@@ -22,6 +22,7 @@
 #include "memkv/memloader.h"
 #include "dbcomm/newstorage.h"
 #include "dbcomm/bitcask_log_impl.h"
+#include "dbcomm/db_comm.h"
 #include "hard_memkv.h"
 #include "db_option.h"
 
@@ -127,11 +128,11 @@ int clsHardMemKv::Init(const Option& option)
     }
 
     assert(0 == ret);
-    ret = memkv_->StartMemMergeThread();
-    if (0 != ret) {
-        logerr("memkv::StartMemMergeThread ret %d", ret);
-        return ret;
-    }
+    //ret = memkv_->StartMemMergeThread();
+    //if (0 != ret) {
+    //    logerr("memkv::StartMemMergeThread ret %d", ret);
+    //    return ret;
+    //}
 
     assert(0 == ret);
 
@@ -231,6 +232,9 @@ int clsHardMemKv::Write(
     // 0. build basic info
     memkv::NewBasic_t info = {0};
     to_info(header, info);
+    if (info.llMaxIndex == info.llChosenIndex) {
+        assert(false == dbcomm::TestFlag(info.cState, PENDING));
+    }
 
     // TODO: 
     // optimize step:
@@ -277,7 +281,6 @@ int clsHardMemKv::Write(
         logerr("memkv::Set key %lu ret %d", logid, ret);
         return ret;
     }
-
     assert(0 == ret);
     return 0;
 }

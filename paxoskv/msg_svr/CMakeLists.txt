@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 
 project(paxoskv_msgsvr)
 
-set(CMAKE_CXX_FLAGS " -g -Wall -std=c++11 -D__MSGSVR_USE_LIBCO__")
+set(CMAKE_CXX_FLAGS " -g -Wall -std=c++11 -D__MSGSVR_USE_LIBCO__ -DTEST_DEBUG")
 
 set(
     SOURCES

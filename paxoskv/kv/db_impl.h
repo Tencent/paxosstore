@@ -70,7 +70,7 @@ public:
     int Set(
             const std::string& key, 
             const std::string& value, 
-            const uint32_t prev_version, 
+            const uint32_t* prev_version, 
             uint64_t& forward_reqid, 
             uint32_t& new_version);
 

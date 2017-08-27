@@ -23,7 +23,7 @@ public:
     HashBaseLock();
     ~HashBaseLock();
 
-    int Init(const char *sLockPath, uint32_t iLockCount);
+    int Init(const char *sLockPath, uint32_t iLockCount, bool reset=true);
     int Attach(const char *sPath, uint32_t iLockCount);
     int Init(uint32_t iLockCount);
 

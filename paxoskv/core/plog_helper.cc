@@ -12,6 +12,7 @@
 #include "plog_helper.h"
 #include "paxos.pb.h"
 #include "err_code.h"
+#include "cutils/log_utils.h"
 
 
 namespace {
@@ -219,6 +220,8 @@ int can_write(
     assert(nullptr != max_ins);
     if (1 == plog.entries_size()) {
         if (false == max_ins->chosen()) {
+            logerr("enries_size %d max_ins->index %lu", 
+                    plog.entries_size(), max_ins->index());
             return 1 == max_ins->index() ? 0 : PAXOS_SET_LOCAL_OUT;
         }
 

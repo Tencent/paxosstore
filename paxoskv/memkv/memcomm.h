@@ -20,8 +20,7 @@
 #define HBAK_MARK 0x20
 #define CHOSEN_MARK 0x40
 
-#define PENDING 0x01
-#define IS_FAST_ACCEPT 0x10
+#define PENDING 0x10
 
 #define MAX_KEY_LEN 8
 
@@ -30,7 +29,11 @@
 #define START_FLAG 0x12
 #define END_FLAG 0x34
 
+#if defined(SMALL_MEM)
+#define BLOCK_SIZE (4 * 1024 * 1024)
+#else
 #define BLOCK_SIZE (512 * 1024 * 1024)
+#endif
 
 #define NEW_IDX_SHM_KEY 0x20160405
 #define NEW_DATA_BLOCK_SHM_KEY 0x30160405

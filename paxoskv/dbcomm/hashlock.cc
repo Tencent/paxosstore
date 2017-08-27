@@ -41,7 +41,8 @@ HashBaseLock::~HashBaseLock() {
     }
 }
 
-int HashBaseLock::Init(const char *sPath, uint32_t iLockCount) {
+int HashBaseLock::Init(
+        const char *sPath, uint32_t iLockCount, bool reset) {
     uint32_t i = 0;
     int ret = 0;
     uint32_t iLockNum = 0;
@@ -50,7 +51,7 @@ int HashBaseLock::Init(const char *sPath, uint32_t iLockCount) {
 
     iLockNum = cutils::bkdr_hash(sPath);
     snprintf(m_sLockPath, sizeof(m_sLockPath), "/%u.kvlock", iLockNum);
-    logerr("kvlock: %s %u", sPath, iLockNum);
+    logerr("kvlock: %s %u %s %u", sPath, iLockCount, m_sLockPath, iLockNum);
 
     ret = pthread_rwlockattr_init(&attr);
     if (ret != 0) return -1;
@@ -65,19 +66,36 @@ int HashBaseLock::Init(const char *sPath, uint32_t iLockCount) {
         return -3;
     }
     ftruncate(m_shm_id, sizeof(pthread_rwlock_t) * iLockCount);
-
+    printf ( "m_sLockPath %s m_shm_id %d\n", m_sLockPath, m_shm_id );
     m_pstRWLock = (pthread_rwlock_t *)mmap(
-        NULL, sizeof(pthread_rwlock_t) * iLockCount, PROT_READ | PROT_WRITE,
+        NULL, sizeof(pthread_rwlock_t) * iLockCount, 
+        PROT_READ | PROT_WRITE,
         MAP_SHARED, m_shm_id, 0);
-
     if (m_pstRWLock == MAP_FAILED) {
         logerr("mmap failed %s", strerror(errno));
         return -4;
     }
 
+    if (reset) {
+        memset(m_pstRWLock, 0, sizeof(pthread_rwlock_t) * iLockCount);
+        for (i = 0; i < iLockCount; ++i) {
+            pthread_rwlock_destroy(&m_pstRWLock[i]);
+        }
+    }
+
     for (i = 0; i < iLockCount; i++) {
+        errno = 0;
+#if !defined(__APPLE__)
         ret = pthread_rwlock_init(&m_pstRWLock[i], &attr);
-        if (ret != 0) return -5;
+#else
+        ret = pthread_rwlock_init(&m_pstRWLock[i], nullptr);
+#endif
+        if (0 != ret) {
+            logerr("i %d pthread_rwlock_init ret %d err %s", 
+                    i, ret, strerror(errno));
+            shm_unlink(m_sLockPath);
+            return -5;
+        }
     }
 
     // pthread_mutex_init(m_pMutex, NULL);

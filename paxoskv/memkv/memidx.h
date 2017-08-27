@@ -35,8 +35,13 @@ enum { Empty = -1, Too_Large_Max_Block = -2 };
 
 #define UBYTEMAX(n) ((1ull << ((unsigned long long)n)) - 1ull)
 
-#define MAX_BLOCK 1024
+#if defined(SMALL_MEM)
+#define MAX_OFFSET 10000
+#define MAX_BLOCK 50
+#else
 #define MAX_OFFSET (UBYTEMAX(22))
+#define MAX_BLOCK 1024
+#endif
 #define MAX_KEY_SIZE MAX_OFFSET * sizeof(KeyNode_t)
 
 //#define MEM_IDX_SHM_KEY 0x2457235
