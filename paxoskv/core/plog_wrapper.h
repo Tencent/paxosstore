@@ -103,6 +103,10 @@ public:
         return plog_impl_;
     }
 
+    void ClearPInsAliveState() {
+        pins_state_ = nullptr;
+    }
+
 private:
 
     void setDiskWrite() {

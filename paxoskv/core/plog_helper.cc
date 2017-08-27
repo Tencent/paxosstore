@@ -102,6 +102,35 @@ get_max_ins(paxos::PaxosLog& plog_impl)
 		nullptr : plog_impl.mutable_entries(entries_size - 1);
 }
 
+paxos::PaxosInstance*
+get_pending_ins(paxos::PaxosLog& plog_impl)
+{
+    auto ins = get_max_ins(plog_impl);
+    if (nullptr == ins || false == ins->chosen()) {
+        return ins;
+    }
+
+    assert(ins->chosen());
+    return nullptr;
+}
+
+std::tuple<int, std::string>
+get_value(const paxos::PaxosLog& plog, uint64_t index)
+{
+    for (int idx = 0; idx < plog.entries_size(); ++idx) {
+        auto& ins = plog.entries(idx);
+        if (ins.index() == index) {
+            if (ins.chosen() && ins.has_accepted_value()) {
+                return std::make_tuple(0, ins.accepted_value().data());
+            }
+
+            return std::make_tuple(-1, "");
+        }
+    }
+
+    return std::make_tuple(-2, "");
+}
+
 bool is_slim(const paxos::PaxosLog& plog)
 {
     const int entries_size = plog.entries_size();

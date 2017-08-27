@@ -922,9 +922,10 @@ TEST(PInsWrapperTest, ChosenStepMsg)
     // case 2
     {
         std::vector<MessageType> vec_msg_type = {
-            MessageType::PROP_RSP, 
-            MessageType::ACCPT_RSP, 
-            MessageType::FAST_ACCPT_RSP, 
+            //MessageType::PROP_RSP, 
+            //MessageType::ACCPT_RSP, 
+            //MessageType::FAST_ACCPT_RSP, 
+            MessageType::GET_CHOSEN, 
             MessageType::PROP, 
             MessageType::ACCPT, 
             MessageType::FAST_ACCPT, 
@@ -959,7 +960,7 @@ TEST(PInsWrapperTest, ChosenStepMsg)
 
 TEST(PInsWrapperTest, NotChosenStepChosenMsg)
 {
-    PaxosInstance pins_impl = FullPIns();
+    PaxosInstance pins_impl = FullPIns(false);
 
     int ret = 0;
     bool write = false;

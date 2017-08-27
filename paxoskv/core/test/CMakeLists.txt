@@ -31,5 +31,6 @@ add_executable(test_pb test_pb.cc)
 target_link_libraries(test_pb paxoskv_core_test paxoskv_core)
 
 add_test_target(pins_wrapper)
+add_test_target(plog_wrapper)
 #add_executable(plog_wrapper_test plog_wrapper_test.cc)
 #target_link_libraries(plog_wrapper_test paxoskv_core_test paxoskv_core)

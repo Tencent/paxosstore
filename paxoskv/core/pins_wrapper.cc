@@ -563,7 +563,7 @@ PInsAliveState::Step(const Message& msg, PaxosInstance& pins_impl)
     case MessageType::BEGIN_PROP:
     case MessageType::BEGIN_FAST_PROP:
         {
-            assert(0 == msg.proposed_num());
+            // assert(0 == msg.proposed_num());
 			assert(nullptr == proposing_value_);
 			assert(0 == active_prop_cnt_);
 			assert(0 == max_accepted_hint_num_);

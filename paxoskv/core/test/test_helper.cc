@@ -16,6 +16,7 @@
 #include "core/plog_helper.h"
 #include "core/paxos.pb.h"
 #include "cutils/mem_utils.h"
+#include "cutils/id_utils.h"
 
 using namespace paxos;
 
@@ -55,7 +56,9 @@ void set_test_accepted_value(PaxosInstance& pins_impl)
 {
     auto entry = pins_impl.mutable_accepted_value();
     assert(nullptr != entry);
-    entry->set_reqid(test_reqid);
+
+    auto reqid = cutils::IDGenerator(1, 0)();
+    entry->set_reqid(reqid);
     entry->set_data(test_value);
 }
 
@@ -194,7 +197,7 @@ PaxosLog PLogOnlyChosen(uint64_t chosen_index)
 
 PaxosLog PLogWithPending(uint64_t pending_index)
 {
-    auto plog_impl = PLogOnlyChosen(1);
+    auto plog_impl = PLogOnlyChosen(pending_index-1);
     auto pending_ins = plog_impl.add_entries();
     assert(nullptr != pending_ins);
     assert(pending_index > paxos::get_chosen_ins(plog_impl)->index());
