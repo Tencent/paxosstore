@@ -11,7 +11,7 @@ Before PaxosStore, We have QuorumKV storage system, which have powered WeChat se
    - **certain** component for normal PaxosLog + DB design;
    - **paxoskv** component for Key-Value(PaxosLog-as-value);
 
- (The following items are planned for open source from September to October)
+   (The following items are planned for open source from September to October)
  - __A high performance Key-Value system__
  - __A system that supports rich data structures such as queues and collections__ 
  - __A high performance storage engine based on LSM-tree__ 
