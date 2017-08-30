@@ -11,7 +11,7 @@ Prior to PaxosStore, we have been using a QuorumKV storage system to support WeC
    - **Certain** component for normal PaxosLog + DB design;
    - **Paxoskv** component for Key Value(PaxosLog-as-value);
 
-   In addition, the following items ar planned for open source by October 2017.
+   In addition, the following items are planned for open source by October 2017.
  - __A high performance Key-Value system__
  - __A system that supports rich data structures such as queues and collections__ 
  - __A high performance storage engine based on LSM-tree__ 
