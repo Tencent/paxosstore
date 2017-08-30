@@ -1,19 +1,10 @@
-
-/*
-* Tencent is pleased to support the open source community by making PaxosStore available.
-* Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
-* Licensed under the BSD 3-Clause License (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
-* https://opensource.org/licenses/BSD-3-Clause
-* Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-*/
-
-
-
 #include "Certain.h"
 #include "CertainUserImpl.h"
 #include "DBImpl.h"
 #include "PLogImpl.h"
 #include "UserWorker.h"
+
+#include "iLogInternal.h"
 
 static volatile uint8_t g_iStopFlag;
 
@@ -32,12 +23,36 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
+    Comm::OpenLog("simple", 3, "/home/qspace/log/");
+
 	clsCertainUserImpl oImpl;
 
-	clsKVEngine oKVEngineForPLog;
+    leveldb::DB* plog = NULL;
+    {
+        leveldb::Status s;
+        string dbname = "/home/qspace/data/simple/plog";
+
+        leveldb::Options opts;
+        opts.create_if_missing = true;
+        assert(leveldb::DB::Open(opts, dbname, &plog).ok());
+    }
+
+	clsKVEngine oKVEngineForPLog(plog);
+    oKVEngineForPLog.SetNoThing();
 	Certain::clsPLogImpl oPLogImpl(&oKVEngineForPLog);
 
-	clsKVEngine oKVEngineForDB;
+    leveldb::DB* db = NULL;
+    {
+        leveldb::Status s;
+        string dbname = "/home/qspace/data/simple/db";
+
+        leveldb::Options opts;
+        opts.create_if_missing = true;
+        assert(leveldb::DB::Open(opts, dbname, &db).ok());
+    }
+
+	clsKVEngine oKVEngineForDB(db);
+    oKVEngineForDB.SetUseMap();
 	Certain::clsDBImpl oDBImpl(&oKVEngineForDB);
 
 	Certain::clsCertainWrapper *poWrapper = NULL;
@@ -48,7 +63,12 @@ int main(int argc, char **argv)
 	int iRet = poWrapper->Init(&oImpl, &oPLogImpl, &oDBImpl, argc, argv);
 	AssertEqual(iRet, 0);
 
-    Certain::clsUserWorker::GetInstance()->Start();
+    Certain::clsUserWorker::Init(100);
+    for (uint32_t i = 0; i < 100; ++i)
+    {
+        Certain::clsUserWorker *poWorker = new Certain::clsUserWorker(i);
+        poWorker->Start();
+    }
 
 	poWrapper->Start();
 

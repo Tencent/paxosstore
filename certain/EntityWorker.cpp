@@ -1,14 +1,3 @@
-
-/*
-* Tencent is pleased to support the open source community by making PaxosStore available.
-* Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
-* Licensed under the BSD 3-Clause License (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
-* https://opensource.org/licenses/BSD-3-Clause
-* Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-*/
-
-
-
 #include "EntityWorker.h"
 
 namespace Certain
@@ -261,7 +250,7 @@ int clsEntityWorker::RecoverEntry(EntryInfo_t *ptInfo,
 	uint64_t iEntityID = ptEntityInfo->iEntityID;
 	uint64_t iEntry = ptInfo->iEntry;
 
-	// (TODO): check mem limit here
+	// (TODO)rock: check mem limit here
 	// May have mem more than limit if eliminate slow.
 	int iRet = ptInfo->poMachine->Update(iEntityID, iEntry,
 			iLocalAcceptorID, iLocalAcceptorID, tRecord);
@@ -882,7 +871,7 @@ int clsEntityWorker::RecoverFromPLogWorker(clsPaxosCmd *poCmd)
 		ptInfo->bNotFound = true;
 	}
 
-	// (TODO): not need recover when not found
+	// (TODO)rock: not need recover when not found
 	const EntryRecord_t &tSrcRecord = poCmd->GetSrcRecord();
 	AssertNotMore(0, RecoverEntry(ptInfo, tSrcRecord));
 	UpdateMaxChosenEntry(ptEntityInfo, ptInfo);
@@ -1175,7 +1164,7 @@ int clsEntityWorker::RangeRecoverFromPLog(clsRecoverCmd *poCmd)
 		EntryInfo_t *ptInfo = m_poEntryMng->FindEntryInfo(iEntityID, iEntry);
 		if (ptInfo == NULL)
 		{
-			// (TODO): remove this recover
+			// (TODO)rock: remove this recover
 			EntryRecord_t tRecord, tEmptyRecord;
 			InitEntryRecord(&tEmptyRecord);
 			ptInfo = m_poEntryMng->CreateEntryInfo(ptEntityInfo, iEntry);
@@ -2329,7 +2318,6 @@ int clsEntityWorker::DoWithIOReq(clsCmdBase *poCmd)
 
 	switch (poCmd->GetCmdID())
 	{
-		case kSimpleCmd:
 		case kWriteBatchCmd:
 			poClientCmd = dynamic_cast<clsClientCmd *>(poCmd);
 			return DoWithClientCmd(poClientCmd);
@@ -2830,7 +2818,7 @@ bool clsEntityWorker::ActivateEntry(EntryInfo_t *ptInfo)
 	// The entry is newly open and has no activity.
 	if (ptEntityInfo->iMaxChosenEntry < iEntry && poMachine->IsLocalEmpty())
 	{
-		CertainLogError("iEntityID %lu entrys: %lu %lu %lu ref %d",
+		CertainLogInfo("iEntityID %lu entrys: %lu %lu %lu ref %d",
 				iEntityID, ptEntityInfo->iMaxContChosenEntry, ptEntityInfo->iCatchUpEntry,
 				ptEntityInfo->iMaxChosenEntry, ptEntityInfo->iRefCount);
 		CleanUpEntry(ptInfo);
@@ -2877,7 +2865,7 @@ bool clsEntityWorker::ActivateEntry(EntryInfo_t *ptInfo)
 				break;
 			}
 
-			// (TODO): check if online
+			// (TODO)rock: check if online
 			ptInfo->iActiveAcceptorID++;
 		}
 
@@ -3061,5 +3049,3 @@ uint32_t clsEntityWorker::GetPeerAcceptorID(EntityInfo_t *ptEntityInfo)
 }
 
 } // namespace Certain
-
-

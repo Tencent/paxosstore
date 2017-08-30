@@ -1,14 +1,3 @@
-
-/*
-* Tencent is pleased to support the open source community by making PaxosStore available.
-* Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
-* Licensed under the BSD 3-Clause License (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
-* https://opensource.org/licenses/BSD-3-Clause
-* Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-*/
-
-
-
 #ifndef CERTAIN_INCLUDE_CERTAIN_H_
 #define CERTAIN_INCLUDE_CERTAIN_H_
 
@@ -63,11 +52,6 @@ public:
 		assert(false);
 	}
 
-	virtual uint32_t GetAcceptorNum()
-	{
-		return 3;
-	}
-
 	virtual int GetLocalAcceptorID(uint64_t iEntityID,
 			uint32_t &iLocalAcceptorID)
     {
@@ -87,27 +71,10 @@ public:
 		return 0;
 	}
 
-	virtual const char *GetCertainConfPath()
-    {
-        return NULL;
-    }
-
 	virtual void OnReady()
 	{
 		// If you have nothing to do when Certain is ready,
 		// it's no need implement this function.
-	}
-
-	virtual void WaitTimeout(uint64_t iTimeoutMS)
-    {
-        usleep(iTimeoutMS * 1000);
-    }
-
-	virtual int GetSvrAddr(uint64_t iEntityID, uint32_t iAcceptorID,
-			Certain::InetAddr_t & tAddr)
-	{
-		assert(false);
-		return -1;
 	}
 
 	virtual uint32_t GetStartRoutineID()
@@ -124,12 +91,6 @@ public:
 	virtual bool IsRejectAll()
 	{
 		return false;
-	}
-
-	virtual int GetAllEntityID(vector<uint64_t> &vecEntityID)
-	{
-		assert(false);
-		return -1;
 	}
 
     virtual string GetConfSuffix()
@@ -225,7 +186,7 @@ public:
 		std::string  * pStrValue;
 	};
 
-	virtual int Submit(clsClientCmd *poClientCmd, string &strWriteBatch)
+	virtual int ExcuteCmd(clsClientCmd *poClientCmd, string &strWriteBatch)
 	{
 		// For Certain control.
 		assert(false);
@@ -249,26 +210,6 @@ public:
         assert(false);
         return -1;
     }
-
-	virtual int RecoverData(uint32_t iHeadUin, const void* const ptReq)
-	{
-		assert(false);
-		return -1;
-	}
-
-	virtual int GetAllForCertain(const uint32_t iHeadUin, const void * const ptReq, void * ptRsp)
-	{
-		assert(false);
-		return -1;
-	}
-	virtual int GetStartSeq(uint32_t iHeadUin, uint32_t & iStartSeq)
-	{
-		return -1;
-	}
-	virtual int UpdateStartSeq(uint32_t iHeadUin,  uint32_t iStartSeq)
-	{
-		return -1;
-	}
 
 	virtual int LoadMaxCommitedEntry(uint64_t iEntityID,
 			uint64_t &iCommitedEntry, uint32_t &iFlag, uint32_t & iSeq)

@@ -1,14 +1,3 @@
-
-/*
-* Tencent is pleased to support the open source community by making PaxosStore available.
-* Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
-* Licensed under the BSD 3-Clause License (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
-* https://opensource.org/licenses/BSD-3-Clause
-* Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-*/
-
-
-
 #ifndef CERTAIN_EXAMPLE_SIMPLE_SIMPLEPLOG_H_
 #define CERTAIN_EXAMPLE_SIMPLE_SIMPLEPLOG_H_
 
@@ -38,22 +27,45 @@ private:
 		}
 	};
 
+    uint64_t ntohll(uint64_t i)
+    {
+        if (__BYTE_ORDER == __LITTLE_ENDIAN) {
+            return (((uint64_t)ntohl((uint32_t)i)) << 32) | (uint64_t)(ntohl((uint32_t)(i >> 32)));
+        }
+        return i;
+    }
+
+    uint64_t htonll(uint64_t i)
+    {
+        if (__BYTE_ORDER == __LITTLE_ENDIAN) {
+            return (((uint64_t)htonl((uint32_t)i)) << 32) | ((uint64_t)htonl((uint32_t)(i >> 32)));
+        }
+        return i;
+    }
+
 	string Serialize(const EntryKey_t &tKey)
 	{
-		return string((const char *)&tKey, sizeof(tKey));
+        EntryKey_t t = tKey;
+        t.iEntityID = htonll(tKey.iEntityID);
+        t.iEntry = htonll(tKey.iEntry);
+        t.iValueID = htonll(tKey.iValueID);
+		return string((const char *)&t, sizeof(t));
 	}
 
 	EntryKey_t Parse(const string &strKey)
 	{
-		AssertEqual(strKey.size(), sizeof(EntryKey_t));
-		return *(EntryKey_t *)(strKey.data());
+		EntryKey_t t = *(EntryKey_t *)(strKey.data());
+        t.iEntityID = ntohll(t.iEntityID);
+        t.iEntry = ntohll(t.iEntry);
+        t.iValueID = ntohll(t.iValueID);
+        return t;
 	}
 
 	clsKVEngine *m_poKVEngine;
 
 public:
 	clsPLogImpl(clsKVEngine *poKVEngine)
-			: m_poKVEngine(poKVEngine) { }
+			: m_poKVEngine(poKVEngine) { assert(__BYTE_ORDER == __LITTLE_ENDIAN); }
 
 	virtual ~clsPLogImpl() { }
 

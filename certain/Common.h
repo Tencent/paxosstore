@@ -1,14 +1,3 @@
-
-/*
-* Tencent is pleased to support the open source community by making PaxosStore available.
-* Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
-* Licensed under the BSD 3-Clause License (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
-* https://opensource.org/licenses/BSD-3-Clause
-* Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-*/
-
-
-
 #ifndef CERTAIN_COMMON_H_
 #define CERTAIN_COMMON_H_
 
@@ -56,8 +45,7 @@ namespace Certain
 #define MAX_UUID_NUM			50000
 #define UUID_GROUP_NUM			32
 
-#define MAX_ASYNC_PIPE_NUM 		100
-//#define MAX_ASYNC_PIPE_NUM 		6000
+#define MAX_ASYNC_PIPE_NUM 		6000
 #define MAX_CONTROL_GROUP_NUM   24
 
 #define RP_MAGIC_NUM 			0x81ac
@@ -135,7 +123,7 @@ inline void ConvertToNetOrder(RawPacket_t *ptRP)
 
 // Proposal Number 0 means null.
 
-// (TODO): use 'class clsPaxosValue' since class inside
+// (TODO)rock: use 'class clsPaxosValue' since class inside
 struct PaxosValue_t
 {
 	uint64_t iValueID;
@@ -166,7 +154,7 @@ struct PaxosValue_t
 	}
 };
 
-// (TODO): use 'class clsEntryRecord' since class inside
+// (TODO)rock: use 'class clsEntryRecord' since class inside
 struct EntryRecord_t
 {
 	uint32_t iPreparedNum;

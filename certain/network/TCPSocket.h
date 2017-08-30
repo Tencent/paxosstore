@@ -1,14 +1,3 @@
-
-/*
-* Tencent is pleased to support the open source community by making PaxosStore available.
-* Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
-* Licensed under the BSD 3-Clause License (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
-* https://opensource.org/licenses/BSD-3-Clause
-* Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-*/
-
-
-
 #ifndef CERTAIN_TCPSOCKET_H_
 #define CERTAIN_TCPSOCKET_H_
 
@@ -21,7 +10,7 @@
 namespace Certain
 {
 
-// (TODO): support ipv6
+// (TODO)rock: support ipv6
 struct InetAddr_t
 {
 	struct sockaddr_in tAddr;
@@ -92,7 +81,7 @@ struct InetAddr_t
 		uint16_t iPort = ntohs(tAddr.sin_port);
 
 		char acBuffer[32];
-		snprintf(acBuffer, 32, "%s:%hu:%u", sIP, iPort, tAddr.sin_addr.s_addr);
+		snprintf(acBuffer, 32, "%s:%hu", sIP, iPort);
 
 		return acBuffer;
 	}
@@ -103,7 +92,7 @@ struct InetAddr_t
 	}
 };
 
-// (TODO): impl clsTCPSocket
+// (TODO)rock: impl clsTCPSocket
 struct ConnInfo_t
 {
 	int iFD;

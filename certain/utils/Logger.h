@@ -1,14 +1,3 @@
-
-/*
-* Tencent is pleased to support the open source community by making PaxosStore available.
-* Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
-* Licensed under the BSD 3-Clause License (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
-* https://opensource.org/licenses/BSD-3-Clause
-* Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-*/
-
-
-
 #ifndef CERTAIN_UTILS_LOGGER_H_
 #define CERTAIN_UTILS_LOGGER_H_
 
@@ -47,29 +36,6 @@ enum enumLogLevel
 int OpenLog(const char *pcFilePath, uint32_t iLogLevel, uint32_t iUseConsole, uint32_t iUseCertainLog);
 void WriteLog(const char *pcBuffer, uint32_t iLen);
 
-#if CERTAIN_DEBUG
-
-#define CertainLog(__level, fmt, args...) \
-	do { \
-		struct timeval __now_tv; \
-		gettimeofday(&__now_tv, NULL); \
-		const time_t __seconds = __now_tv.tv_sec; \
-		struct tm __t; \
-		localtime_r(&__seconds, &__t); \
-		int __iLen = snprintf(g_acCertainLogBuffer, kLogBufferSize, "%04d/%02d/%02d-%02d:%02d:%02d.%06d %s %s:%s:%u " fmt "\n", \
-				__t.tm_year + 1900, __t.tm_mon + 1, __t.tm_mday, __t.tm_hour, __t.tm_min, __t.tm_sec, static_cast<int>(__now_tv.tv_usec), \
-				__level, __FILE__, __FUNCTION__, __LINE__, ##args); \
-		if (__iLen > int(kLogBufferSize)) __iLen = kLogBufferSize; \
-		if (strcmp(__level, "Fatal") == 0) { \
-			write(2, g_acCertainLogBuffer, __iLen); \
-			assert(false); \
-			if (g_iCertainUseConsole) break; \
-		} \
-		if (g_iCertainUseLog) Certain::WriteLog(g_acCertainLogBuffer, __iLen); \
-	} while (0);
-
-#else
-
 #define CertainLog(__level, fmt, args...) \
 	do { \
 		struct timeval __now_tv; \
@@ -86,8 +52,6 @@ void WriteLog(const char *pcBuffer, uint32_t iLen);
 		} \
 		if (g_iCertainUseLog) Certain::WriteLog(g_acCertainLogBuffer, __iLen); \
 	} while (0);
-
-#endif // for if CERTAIN_DEBUG
 
 #define CertainLogDebug(fmt, args...) \
 	do { \

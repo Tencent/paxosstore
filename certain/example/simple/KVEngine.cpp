@@ -1,65 +1,101 @@
-
-/*
-* Tencent is pleased to support the open source community by making PaxosStore available.
-* Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
-* Licensed under the BSD 3-Clause License (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
-* https://opensource.org/licenses/BSD-3-Clause
-* Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-*/
-
-
-
 #include "KVEngine.h"
 
 int clsKVEngine::Put(const string &strKey, const string &strValue)
 {
-	Certain::clsThreadWriteLock oWLock(&m_oRWLock);
-	return PutInner(strKey, strValue);
+    if (m_bNoThing)
+    {
+        return 0;
+    }
+    leveldb::WriteOptions tOpt;
+    //tOpt.sync = true;
+
+    leveldb::Status s = m_poLevelDB->Put(tOpt, strKey, strValue);
+    if (!s.ok())
+    {
+        return Certain::eRetCodePLogPutErr;
+    }
+    return 0;
 }
 
 int clsKVEngine::MultiPut(const vector< pair<string, string> > &vecKeyValue)
 {
-	Certain::clsThreadWriteLock oWLock(&m_oRWLock);
-	for (vector< pair<string, string> >::const_iterator iter
-			= vecKeyValue.begin(); iter != vecKeyValue.end(); ++iter)
-	{
-		PutInner(iter->first, iter->second);
-	}
-	return Certain::eRetCodeOK;
+    if (m_bNoThing)
+    {
+        return 0;
+    }
+    if (m_bUseHash)
+    {
+        for (auto iter = vecKeyValue.begin(); iter != vecKeyValue.end(); ++iter)
+        {
+            uint32_t iIndex = Certain::Hash(iter->first) % kGroupNum;
+            Certain::clsThreadWriteLock oWriteLock(&m_oRWLock[iIndex]);
+            m_oMap[iIndex][iter->first] = iter->second;
+        }
+        return 0;
+    }
+    leveldb::WriteOptions tOpt;
+    //tOpt.sync = true;
+
+    leveldb::WriteBatch wb;
+    for (auto iter = vecKeyValue.begin(); iter != vecKeyValue.end(); ++iter)
+    {
+        wb.Put(iter->first, iter->second);
+    }
+
+    leveldb::Status s = m_poLevelDB->Write(tOpt, &wb);
+    if (!s.ok())
+    {
+        return Certain::eRetCodePLogPutErr;
+    }
+    return 0;
 }
 
 int clsKVEngine::Get(const string &strKey, string &strValue)
 {
-	Certain::clsThreadReadLock oRLock(&m_oRWLock);
+    if (m_bUseHash)
+    {
+        uint32_t iIndex = Certain::Hash(strKey) % kGroupNum;
+        Certain::clsThreadReadLock oReadLock(&m_oRWLock[iIndex]);
+        auto iter = m_oMap[iIndex].find(strKey);
+        if (iter == m_oMap[iIndex].end())
+        {
+            return Certain::eRetCodeNotFound;
+        }
+        strValue = iter->second;
+        return 0;
+    }
+    static leveldb::ReadOptions tOpt;
 
-	if (m_tKVEngine.find(strKey) == m_tKVEngine.end())
-	{
-		return Certain::eRetCodeNotFound;
-	}
-
-	strValue = m_tKVEngine[strKey];
-
-	return Certain::eRetCodeOK;
+    leveldb::Status s = m_poLevelDB->Get(tOpt, strKey, &strValue);
+    if (!s.ok())
+    {
+        if (s.IsNotFound())
+        {
+            return Certain::eRetCodeNotFound;
+        }
+        return Certain::eRetCodePLogGetErr;
+    }
+    return 0;
 }
 
-bool clsKVEngine::Find(const string &strKey)
-{
-	Certain::clsThreadReadLock oRLock(&m_oRWLock);
-	return m_tKVEngine.find(strKey) != m_tKVEngine.end();
-}
-
-int clsKVEngine::RangeGet(const string &strStart, const string &strEnd,
+int clsKVEngine::RangeLoad(const string &strStart, const string &strEnd,
 		vector< pair<string, string> > &vecKeyValue)
 {
 	vecKeyValue.clear();
-	Certain::clsThreadReadLock oRLock(&m_oRWLock);
 
-	KVEngine_t::iterator iter = m_tKVEngine.upper_bound(strStart);
-	while (iter != m_tKVEngine.end() && iter->first < strEnd)
-	{
-		vecKeyValue.push_back(*iter);
-		++iter;
-	}
+    static leveldb::ReadOptions tOpt;
 
-	return Certain::eRetCodeOK;
+    leveldb::Iterator *iter = m_poLevelDB->NewIterator(tOpt);
+
+    for (iter->Seek(strStart); iter->Valid(); iter->Next())
+    {
+        string strKey = iter->key().ToString();
+        if (strKey >= strEnd)
+        {
+            break;
+        }
+        vecKeyValue.push_back(make_pair(strKey, iter->value().ToString()));
+    }
+
+	return 0;
 }

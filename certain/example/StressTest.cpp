@@ -1,22 +1,157 @@
-
-/*
-* Tencent is pleased to support the open source community by making PaxosStore available.
-* Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
-* Licensed under the BSD 3-Clause License (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
-* https://opensource.org/licenses/BSD-3-Clause
-* Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-*/
-
-
-
 #include "Command.h"
-#include "EpollIO.h"
-#include "IOChannel.h"
 #include "Configure.h"
+
+#include "network/EpollIO.h"
+#include "network/IOChannel.h"
+
+#include "SimpleCmd.h"
 
 using namespace Certain;
 
 volatile uint64_t iUUIDGenerator = 0;
+
+class clsStatInfoHelper
+{
+private:
+	string m_strTag;
+
+    struct StatInfo_t
+    {
+        volatile uint64_t iMaxUseTimeUS;
+        volatile uint64_t iTotalUseTimeUS;
+        volatile uint64_t iCount;
+    };
+
+    map<string, StatInfo_t> m_tStatInfoMap;
+
+    Certain::clsMutex m_oMutex;
+    uint64_t m_iNextPrintTimeMS;
+
+public:
+
+	clsStatInfoHelper(string strTag, vector<string> vecName)
+	{
+		m_strTag = strTag;
+        for (uint32_t i = 0; i < vecName.size(); ++i)
+        {
+            StatInfo_t tInfo = { 0 };
+            m_tStatInfoMap[vecName[i]] = tInfo;
+        }
+        m_iNextPrintTimeMS = Certain::GetCurrTimeMS() + 1000;
+	}
+
+	virtual ~clsStatInfoHelper() { }
+
+	void Update(string strName, uint64_t iCount, uint64_t iUseTimeUS)
+	{
+        StatInfo_t &tInfo = m_tStatInfoMap[strName];
+
+		if (tInfo.iMaxUseTimeUS < iUseTimeUS)
+		{
+			tInfo.iMaxUseTimeUS = iUseTimeUS;
+		}
+
+		__sync_fetch_and_add(&tInfo.iTotalUseTimeUS, iUseTimeUS);
+		__sync_fetch_and_add(&tInfo.iCount, 1);
+
+        CheckPrint();
+	}
+
+	void CheckPrint()
+	{
+        map<string, StatInfo_t> tTemp;
+        {
+            Certain::clsThreadLock oLock(&m_oMutex);
+            uint64_t iCurrTimeMS = Certain::GetCurrTimeMS();
+            if (iCurrTimeMS <= m_iNextPrintTimeMS)
+            {
+                return;
+            }
+            m_iNextPrintTimeMS = iCurrTimeMS + 1000;
+
+            tTemp = m_tStatInfoMap;
+            for (auto iter = m_tStatInfoMap.begin(); iter != m_tStatInfoMap.end(); ++iter)
+            {
+                StatInfo_t &tInfo = tTemp[iter->first];
+                tInfo.iTotalUseTimeUS = __sync_fetch_and_and(&(iter->second.iTotalUseTimeUS), 0);
+                tInfo.iCount = __sync_fetch_and_and(&(iter->second.iCount), 0);
+                tInfo.iMaxUseTimeUS = __sync_fetch_and_and(&(iter->second.iMaxUseTimeUS), 0);
+            }
+        }
+
+        OnPrint(tTemp);
+	}
+
+    virtual void OnPrint(map<string, StatInfo_t> tTemp)
+    {
+        uint32_t iLen = 256;
+        char acBuffer[iLen];
+
+        sprintf(acBuffer, "certain_stat %s", m_strTag.c_str());
+        string strResult = acBuffer;
+
+        for (auto iter = tTemp.begin(); iter != tTemp.end(); ++iter)
+        {
+            string name = iter->first;
+            StatInfo_t &tInfo = iter->second;
+
+            if (tInfo.iCount == 0)
+            {
+                sprintf(acBuffer, " [%s cnt 0]", name.c_str());
+            }
+            else
+            {
+                sprintf(acBuffer, " [%s max_us %lu avg_us %lu cnt %lu]",
+                        name.c_str(), tInfo.iMaxUseTimeUS,
+                        tInfo.iTotalUseTimeUS / tInfo.iCount, tInfo.iCount);
+            }
+            strResult += acBuffer;
+        }
+
+        if (tTemp.find("all") != tTemp.end() && tTemp.find("failed") != tTemp.end())
+        {
+            StatInfo_t &tAll = tTemp["all"];
+            StatInfo_t &tFailed = tTemp["failed"];
+            if (tAll.iCount > 0)
+            {
+                sprintf(acBuffer, " {fail_rt %.5lf%% qps}", double(tFailed.iCount) / tAll.iCount * 100);
+                strResult += acBuffer;
+            }
+        }
+
+        printf("%s\n", strResult.c_str());
+    }
+};
+
+class clsStopHelper
+{
+    private:
+        string m_strTag;
+        uint64_t m_iCount;
+        uint64_t m_iLimitCount;
+
+    public:
+        clsStopHelper(string strTag, uint64_t iLimitCount)
+        {
+            m_strTag = strTag;
+            m_iLimitCount = iLimitCount;
+        }
+        ~clsStopHelper() { }
+
+        void AddCount(uint64_t iDelta)
+        {
+            uint64_t iCnt = __sync_add_and_fetch(&m_iCount, iDelta);
+            if (iCnt >= m_iLimitCount)
+            {
+                printf("%s iCnt %lu\n", m_strTag.c_str(), iCnt);
+            }
+        }
+
+        bool CheckIfStop()
+        {
+            return m_iCount >= m_iLimitCount;
+        }
+};
 
 clsCmdBase *CreateRandomGetCmd(uint32_t iKeyRange)
 {
@@ -24,7 +159,7 @@ clsCmdBase *CreateRandomGetCmd(uint32_t iKeyRange)
 
 	// gen key
 	char pcBuffer[20];
-	snprintf(pcBuffer, sizeof(pcBuffer), "%lu", iUUID % iKeyRange);
+	sprintf(pcBuffer, "%lu", iUUID % iKeyRange);
 	string strKey = pcBuffer;
 	while (strKey.size() < 8)
 	{
@@ -46,7 +181,7 @@ clsCmdBase *CreateRandomSetCmd(uint32_t iKeyRange, uint32_t iValueLen)
 
 	// gen key
 	char pcBuffer[20];
-	snprintf(pcBuffer, sizeof(pcBuffer), "%lu", iUUID % iKeyRange);
+	sprintf(pcBuffer, "%lu", iUUID % iKeyRange);
 	string strKey = pcBuffer;
 	while (strKey.size() < 8)
 	{
@@ -132,11 +267,11 @@ public:
 
 		RawPacket_t *lp = (RawPacket_t *)m_pcIOBuffer;
 		ConvertToNetOrder(lp);
-		lp->iStartFlag = RP_STATR_FLAG;
+		lp->hMagicNum = htons(RP_MAGIC_NUM);
 		lp->hReserve = 0;
-		lp->hCmdID = poCmd->GetCmdID();
-		lp->iLen = iBytes;
-		lp->iCheckSum = CRC32(lp->pcData, lp->iLen);
+		lp->hCmdID = htons(poCmd->GetCmdID());
+		lp->iLen = htonl(iBytes);
+		lp->iCheckSum = CRC32(lp->pcData, iBytes);
 
 		return RP_HEADER_SIZE + iBytes;
 	}
@@ -173,7 +308,7 @@ public:
 		AssertNotMore(iRet, lp->iLen + RP_HEADER_SIZE);
 		if (uint32_t(iRet) < lp->iLen + RP_HEADER_SIZE)
 		{
-			poChannel->SetReadBytes(m_pcIOBuffer, iRet);
+			poChannel->AppendReadBytes(m_pcIOBuffer, iRet);
 			return 1;
 		}
 
@@ -183,78 +318,83 @@ public:
 		return 0;
 	}
 
-	void HandleIOEvent(clsFDBase *poFD)
-	{
+    int HandleRead(clsFDBase* poFD)
+    {
+        int iRet;
 		clsIOChannel *poChannel = dynamic_cast<clsIOChannel *>(poFD);
 
+        clsSimpleCmd oResult;
+        iRet = ReadSingleResult(poChannel, oResult);
+        if (iRet < 0)
+        {
+            CertainLogError("ReadSingleResult ret %d", iRet);
+        }
+        else if (iRet > 0)
+        {
+            AssertEqual(iRet, 1);
+        }
+        else
+        {
+            for (uint32_t i = 0; i < m_vecChannel.size(); ++i)
+            {
+                if (m_vecChannel[i] == poChannel)
+                {
+                    m_vecSentable[i] = true;
+                }
+            }
+            uint64_t iUseTime = GetCurrTimeMS()
+                - poChannel->GetTimestamp();
+
+            vector<string> vecName; vecName.push_back("all"); vecName.push_back("failed");
+            static clsStatInfoHelper oStat("stress", vecName);
+
+            oStat.Update("all", 1, iUseTime * 1000);
+            if (oResult.GetResult() != 0)
+            {
+                printf("use_time %lu fd %d ret_cmd: %s res %d\n",
+                        iUseTime, poChannel->GetFD(),
+                        oResult.GetTextCmd().c_str(),
+                        oResult.GetResult());
+                oStat.Update("failed", 1, 0);
+            }
+        }
+
+        if (poChannel->IsBroken())
+        {
+            return 1;
+        }
+
+        return 0;
+    }
+
+	int HandleWrite(clsFDBase *poFD)
+	{
 		int iRet;
-		int iFD = poFD->GetFD();
 
-		bool bReadable = poChannel->IsReadable();
-		if (bReadable)
-		{
-			clsSimpleCmd oResult;
-			iRet = ReadSingleResult(poChannel, oResult);
-			if (iRet < 0)
-			{
-				CertainLogError("ReadSingleResult ret %d", iRet);
-			}
-			else if (iRet > 0)
-			{
-				AssertEqual(iRet, 1);
-			}
-			else
-			{
-				for (uint32_t i = 0; i < m_vecChannel.size(); ++i)
-				{
-					if (m_vecChannel[i] == poChannel)
-					{
-						m_vecSentable[i] = true;
-					}
-				}
-				uint64_t iUseTime = GetCurrTimeMS()
-										- poChannel->GetTimestamp();
+		clsIOChannel *poChannel = dynamic_cast<clsIOChannel *>(poFD);
+        iRet = poChannel->Write(m_pcIOBuffer, 0);
+        if (iRet < 0)
+        {
+            CertainLogError("poChannel->Write fd %d, ret %d", poFD->GetFD(), iRet);
+        }
 
-				printf("use_time %lu fd %d ret_cmd: %s res %d\n",
-						iUseTime, poChannel->GetFD(),
-						oResult.GetTextCmd().c_str(),
-						oResult.GetResult());
-			}
-		}
+        if (poChannel->IsBroken())
+        {
+            return 1;
+        }
 
-		bool bWritable = poChannel->IsWritable();
-		if (!poChannel->IsBroken() && bWritable)
-		{
-			iRet = poChannel->Write(m_pcIOBuffer, 0);
-			if (iRet < 0)
-			{
-				CertainLogError("poChannel->Write fd %d, ret %d", iFD, iRet);
-			}
-		}
-
-		bool bBroken = poChannel->IsBroken();
-
-		CertainLogDebug("readable %u writable %u fd %d broken %u conn %s",
-				bReadable, bWritable, iFD, bBroken,
-				poChannel->GetConnInfo().ToString().c_str());
-
-		if (bBroken)
-		{
-			CertainLogError("readable %u writable %u fd %d broken %u",
-					bReadable, bWritable, iFD, bBroken);
-			m_poEpollIO->RemoveAndCloseFD(poChannel);
-		}
+        return 0;
 	}
 
 	clsCmdBase *CreateRandomCmd()
 	{
 		m_iRandomSeed++;
 
-		if (m_iRandomSeed % 2 == 0)
-		{
-			return CreateRandomGetCmd(m_iKeyRange);
-		}
-		else
+		//if (m_iRandomSeed % 2 == 0)
+		//{
+		//	return CreateRandomGetCmd(m_iKeyRange);
+		//}
+		//else
 		{
 			return CreateRandomSetCmd(m_iKeyRange, m_iValueLen);
 		}
@@ -274,7 +414,7 @@ public:
 		CertainLogDebug("send cmd %u", poCmd->GetCmdID());
 		poChannel->AppendWriteBytes(m_pcIOBuffer, iRet);
 
-		HandleIOEvent(poChannel);
+		HandleWrite(poChannel);
 	}
 
 	void Run()

@@ -1,14 +1,3 @@
-
-/*
-* Tencent is pleased to support the open source community by making PaxosStore available.
-* Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
-* Licensed under the BSD 3-Clause License (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
-* https://opensource.org/licenses/BSD-3-Clause
-* Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-*/
-
-
-
 #ifndef CERTAIN_PLogWORKER_H_
 #define CERTAIN_PLogWORKER_H_
 
@@ -52,10 +41,10 @@ public:
 
 	void Update(uint64_t iUseTimeUS)
 	{
-		if (m_poConf->GetEnableTimeStat() == 0)
-		{
-			return;
-		}
+        //if (m_poConf->GetEnableTimeStat() == 0)
+        //{
+        //    return;
+        //}
 
 		if (m_iMaxUseTimeUS < iUseTimeUS)
 		{
@@ -74,11 +63,11 @@ public:
 
 		if (iCnt == 0)
 		{
-			CertainLogImpt("certain_stat %s cnt 0", m_strTag.c_str());
+			CertainLogZero("certain_stat %s cnt 0", m_strTag.c_str());
 		}
 		else
 		{
-			CertainLogImpt("certain_stat %s max_us %lu avg_us %lu cnt %lu",
+			CertainLogZero("certain_stat %s max_us %lu avg_us %lu cnt %lu",
 					m_strTag.c_str(), iMaxUseTimeUS, iTotalUseTimeUS / iCnt, iCnt);
 		}
 	}
@@ -151,7 +140,7 @@ public:
 
 	static int CoEpollTick(void * arg);
 
-	//static void *WakeUpRoutine(void * arg);
+	static void *WakeUpRoutine(void * arg);
 };
 
 } // namespace Certain

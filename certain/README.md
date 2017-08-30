@@ -2,7 +2,7 @@
 
 Certain is an asynchronous implementation of paxos log.
 
-# build certain_simple and certain_cli
+# build simple_srv and simple_cli
 
 	1) download leveldb(https://github.com/google/leveldb/tree/v1.18), move to third/leveldb-1.18 and make,
 
@@ -10,7 +10,7 @@ Certain is an asynchronous implementation of paxos log.
 
 	3) download libco(https://github.com/Tencent/libco), move to third/libco-master and make,
 
-	4) cd certain; make -j 10;
+	4) cd certain; make -j 10 example;
 
 # play
 
@@ -19,15 +19,15 @@ For server:
 	Use '-i' and 'e' to override LocalAcceptorID and ExtEndpoint in the configure.
 	If AcceptorNum is 3 in certain.conf, each server(process) run as:
 
-	./certain_simple -c example/example.conf -i 0 -e 127.0.0.1:38240
+	./simple_srv -c example/example.conf -i 0 -e 127.0.0.1:38240
 
-	./certain_simple -c example/example.conf -i 1 -e 127.0.0.1:38241
+	./simple_srv -c example/example.conf -i 1 -e 127.0.0.1:38241
 
-	./certain_simple -c example/example.conf -i 2 -e 127.0.0.1:38242
+	./simple_srv -c example/example.conf -i 2 -e 127.0.0.1:38242
 
 For client:
 
-	~>./certain_cli 127.0.0.1 38240
+	~>./simple_cli 127.0.0.1 38240
 
     Get xxx
     cmd: cmd 3 uuid 409927680 E(560266, 1) scmd 1 key xxx val.size 0 val  ret -7000 // Not Found

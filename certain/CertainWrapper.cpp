@@ -1,14 +1,3 @@
-
-/*
-* Tencent is pleased to support the open source community by making PaxosStore available.
-* Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
-* Licensed under the BSD 3-Clause License (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
-* https://opensource.org/licenses/BSD-3-Clause
-* Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-*/
-
-
-
 #include "Certain.h"
 #include "ConnWorker.h"
 #include "EntityWorker.h"
@@ -319,8 +308,14 @@ int clsCertainWrapper::Init(clsCertainUserBase *poCertainUser,
 
     clsConfigure::s_strConfSuffix = poCertainUser->GetConfSuffix();
 
-	m_poConf = new clsConfigure(poCertainUser->GetCertainConfPath());
-	// May get CertainConfPath from args.
+	m_poConf = new clsConfigure(NULL);
+
+	iRet = m_poConf->LoadFromOption(iArgc, pArgv);
+	if (iRet != 0)
+	{
+		CertainLogFatal("m_poConf->LoadFromOption ret %d", iRet);
+		return -3;
+	}
 
 	iRet = m_poConf->LoadFromFile();
 	if (iRet != 0)
@@ -531,7 +526,7 @@ int clsCertainWrapper::CheckDBStatus(uint64_t iEntityID,
 		{
 			AssertNotMore(iLeaseTimeoutMS, m_poConf->GetMinLeaseMS());
 			OSS::ReportLeaseWait();
-			m_poCertainUser->WaitTimeout(iLeaseTimeoutMS);
+            poll(NULL, 0, iLeaseTimeoutMS);
 		}
 		else
 		{
@@ -917,10 +912,10 @@ void clsCertainWrapper::Run()
 		Assert(false);
 	}
 
-	CertainLogImpt("CERTAIN_MAKE_FOR_KVSVR %d, %lu workers started.",
-			CERTAIN_MAKE_FOR_KVSVR, m_vecWorker.size());
-	printf("CERTAIN_MAKE_FOR_KVSVR %d, %lu workers started.\n",
-			CERTAIN_MAKE_FOR_KVSVR, m_vecWorker.size());
+	CertainLogImpt("CERTAIN_SIMPLE_EXAMPLE %d, %lu workers started.",
+			CERTAIN_SIMPLE_EXAMPLE, m_vecWorker.size());
+	printf("CERTAIN_SIMPLE_EXAMPLE %d, %lu workers started.\n",
+			CERTAIN_SIMPLE_EXAMPLE, m_vecWorker.size());
 
 	m_poCertainUser->OnReady();
 
@@ -937,7 +932,7 @@ void clsCertainWrapper::Run()
 		uint32_t iWakeUp = m_poConf->GetWakeUpTimeoutUS() / 100;
 		if (iWakeUp > 0 && iSleepCnt % iWakeUp == 0)
 		{
-			//clsWakeUpPipeMng::GetInstance()->WakeupAll();
+			clsWakeUpPipeMng::GetInstance()->WakeupAll();
 		}
 
 		// every 5s
@@ -980,4 +975,3 @@ void clsCertainWrapper::Run()
 }
 
 } // namespace Certain
-

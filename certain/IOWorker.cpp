@@ -1,14 +1,3 @@
-
-/*
-* Tencent is pleased to support the open source community by making PaxosStore available.
-* Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
-* Licensed under the BSD 3-Clause License (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
-* https://opensource.org/licenses/BSD-3-Clause
-* Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-*/
-
-
-
 #include "IOWorker.h"
 #include "EntityInfoMng.h"
 #include "EntryInfoMng.h"
@@ -16,7 +5,10 @@
 #include "CatchUpWorker.h"
 #include "PLogWorker.h"
 #include <sys/syscall.h>
-#include "UserWorker.h"
+
+#if CERTAIN_SIMPLE_EXAMPLE
+#include "example/UserWorker.h"
+#endif
 
 namespace Certain
 {
@@ -251,14 +243,17 @@ int clsIOWorker::PutToIOReqQueue(clsIOChannel *poChannel,
 
 	CertainLogDebug("cmd: %s", poCmd->GetTextCmd().c_str());
 
-    if (poCmd->GetCmdID() != kPaxosCmd)
+#if CERTAIN_SIMPLE_EXAMPLE
+    if (poCmd->GetCmdID() == kSimpleCmd)
     {
         clsClientCmd *poClientCmd = dynamic_cast<clsClientCmd *>(poCmd);
         assert(poClientCmd != NULL);
-        assert(clsUserWorker::GetInstance()->PushUserCmd(poClientCmd) == 0);
+        assert(clsUserWorker::PushUserCmd(poClientCmd) == 0);
         return 0;
     }
+#endif
 
+    AssertEqual(poCmd->GetCmdID(), kPaxosCmd);
 	int iRet = poIOReqQueue->PushByMultiThread(poCmd);
 	if (iRet != 0)
 	{
@@ -310,7 +305,7 @@ int clsIOWorker::ParseIOBuffer(clsIOChannel *poChannel, char *pcBuffer,
 		{
 			if (ptRP->iCheckSum == 0)
 			{
-				// (TODO): add one bit for bHasCheckSum
+				// (TODO)rock: add one bit for bHasCheckSum
 				CertainLogError("Check if CheckSum disable online");
 			}
 			else if (ptRP->iCheckSum != CRC32(ptRP->pcData, ptRP->iLen))
@@ -323,7 +318,7 @@ int clsIOWorker::ParseIOBuffer(clsIOChannel *poChannel, char *pcBuffer,
 			}
 		}
 
-		poCmd = poCmdFactory->CreateCmd(pcBuffer + iCurr, iTotalLen, m_poPaxosCmdPool);
+		poCmd = poCmdFactory->CreateCmd(pcBuffer + iCurr, iTotalLen);
 		if (poCmd == NULL)
 		{
 			IO_ERROR_SKIP(iTotalLen);
@@ -649,14 +644,6 @@ void clsIOWorker::ServeNewConn()
 	uint32_t iConnCnt = 0, iFailCnt = 0, iServerID;
 	ConnInfo_t tConnInfo;
 
-	uint64_t iCurrTimeMS = GetCurrTimeMS();
-	uint32_t iReconnIntvMS = m_poConf->GetReconnIntvMS();
-	if (iCurrTimeMS < m_iLastServeNewConnTimeMS + iReconnIntvMS)
-	{
-		return;
-	}
-	m_iLastServeNewConnTimeMS = iCurrTimeMS;
-
 	while (1)
 	{
 		iRet = m_poConnMng->TakeByMultiThread(m_iWorkerID, m_vecIntChannel,
@@ -672,7 +659,7 @@ void clsIOWorker::ServeNewConn()
 				iServerID, m_iNextFDID);
 		m_iNextFDID += m_poConf->GetIOWorkerNum();
 
-		//CertainLogError("Serve new conn %s", tConnInfo.ToString().c_str());
+	    CertainLogImpt("m_iWorkerID %u Serve new conn %s", m_iWorkerID, tConnInfo.ToString().c_str());
 
 		int iRet = m_poEpollIO->Add(poChannel);
 		if (iRet != 0)
@@ -832,6 +819,11 @@ void clsIOWorker::InitUseTimeStat()
 
 void clsIOWorker::PrintUseTimeStat()
 {
+    if (clsCertainWrapper::GetInstance()->GetConf()->GetEnableTimeStat() == 0)
+    {
+        return;
+    }
+
 	s_poRecoverCmdTimeStat->Print();
 	s_poReadTimeStat->Print();
 	s_poWriteTimeStat->Print();
@@ -916,13 +908,12 @@ void clsIOWorker::ConsumeIORspQueue()
 			continue;
 		}
 
-		//clsAutoDelete<clsCmdBase> oAuto(poCmd);
-		//AssertEqual(poCmd->GetCmdID(), kPaxosCmd);
-		clsPaxosCmd *poPaxosCmd = dynamic_cast<clsPaxosCmd *>(poCmd);
-		clsAutoFreeObjPtr<clsPaxosCmd> oAuto(poPaxosCmd, m_poPaxosCmdPool);
+		clsAutoDelete<clsCmdBase> oAuto(poCmd);
+		//clsAutoFreeObjPtr<clsPaxosCmd> oAuto(poPaxosCmd, m_poPaxosCmdPool);
 
 		if (poCmd->GetCmdID() == kPaxosCmd)
 		{
+            clsPaxosCmd *poPaxosCmd = dynamic_cast<clsPaxosCmd *>(poCmd);
 			if (poPaxosCmd->GetDestAcceptorID() == INVALID_ACCEPTOR_ID)
 			{
 				for (uint32_t i = 0; i < m_poConf->GetAcceptorNum(); ++i)
@@ -1084,5 +1075,3 @@ void clsIOWorker::Run()
 }
 
 } // namespace Certain
-
-

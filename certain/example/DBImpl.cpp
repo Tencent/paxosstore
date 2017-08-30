@@ -1,14 +1,3 @@
-
-/*
-* Tencent is pleased to support the open source community by making PaxosStore available.
-* Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
-* Licensed under the BSD 3-Clause License (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
-* https://opensource.org/licenses/BSD-3-Clause
-* Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-*/
-
-
-
 #include "DBImpl.h"
 
 namespace Certain
@@ -39,23 +28,26 @@ static uint64_t ParseEntry(const string strEntry)
 	return *(uint64_t *)strEntry.data();
 }
 
-int clsDBImpl::SubmitGet(clsSimpleCmd *poCmd)
+int clsDBImpl::ExcuteGet(clsSimpleCmd *poCmd)
 {
 	string strValue;
 	string strStoreKey = StoreKey(poCmd->GetKey());
-	poCmd->SetResult(m_poKVEngine->Get(strStoreKey, strValue));
+	int iRet = m_poKVEngine->Get(strStoreKey, strValue);
 	poCmd->SetValue(strValue);
 
-	return eRetCodeOK;
+	return iRet;
 }
 
-int clsDBImpl::SubmitSet(clsSimpleCmd *poCmd, string &strWriteBatch)
+int clsDBImpl::ExcuteSet(clsSimpleCmd *poCmd, string &strWriteBatch)
 {
-	poCmd->SetResult(eRetCodeOK);
+	static const int kBufferSize = 1024;
+	static __thread char acBuffer[kBufferSize];
 
-	int iRet = poCmd->SerializeToArray(m_pcBuffer, kBufferSize);
+	int iRet = poCmd->SerializeToArray(acBuffer, kBufferSize);
 	AssertLess(0, iRet);
-	strWriteBatch = string(m_pcBuffer, iRet);
+
+    assert(iRet <= kBufferSize);
+	strWriteBatch = string(acBuffer, iRet);
 
 	return eRetCodeOK;
 }
@@ -76,7 +68,7 @@ int clsDBImpl::Commit(uint64_t iEntityID, uint64_t iEntry,
 	{
 		CertainLogFatal("E(%lu, %lu) Check if Noop Come",
 				iEntityID, iEntry);
-		return eRetCodeDBSubmitErr;
+		return eRetCodeDBExcuteErr;
 	}
 
 	clsSimpleCmd *poCmd = new clsSimpleCmd;
@@ -98,7 +90,7 @@ int clsDBImpl::Commit(uint64_t iEntityID, uint64_t iEntry,
 	return m_poKVEngine->MultiPut(vecKeyValue);
 }
 
-int clsDBImpl::Submit(clsClientCmd *poClientCmd, string &strWriteBatch)
+int clsDBImpl::ExcuteCmd(clsClientCmd *poClientCmd, string &strWriteBatch)
 {
 	int iRet;
 
@@ -111,11 +103,11 @@ int clsDBImpl::Submit(clsClientCmd *poClientCmd, string &strWriteBatch)
 	switch (poCmd->GetSubCmdID())
 	{
 		case clsSimpleCmd::kGet:
-			iRet = SubmitGet(poCmd);
+			iRet = ExcuteGet(poCmd);
 			break;
 
 		case clsSimpleCmd::kSet:
-			iRet = SubmitSet(poCmd, strWriteBatch);
+			iRet = ExcuteSet(poCmd, strWriteBatch);
 			break;
 
 		default:
@@ -124,9 +116,9 @@ int clsDBImpl::Submit(clsClientCmd *poClientCmd, string &strWriteBatch)
 
 	if (iRet != eRetCodeOK && iRet != eRetCodeNotFound)
 	{
-		return eRetCodeDBSubmitErr;
+		return eRetCodeDBExcuteErr;
 	}
-	return eRetCodeOK;
+	return iRet;
 }
 
 void clsDBImpl::CheckMaxCommitedEntry(uint64_t iEntityID, uint64_t iEntry)

@@ -1,14 +1,3 @@
-
-/*
-* Tencent is pleased to support the open source community by making PaxosStore available.
-* Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
-* Licensed under the BSD 3-Clause License (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
-* https://opensource.org/licenses/BSD-3-Clause
-* Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-*/
-
-
-
 #ifndef CERTAIN_COMMAND_H_
 #define CERTAIN_COMMAND_H_
 
@@ -21,16 +10,16 @@ namespace Certain
 
 enum enumCmd
 {
-	kPaxosCmd = 1,
-	kRecoverCmd,
-	kSimpleCmd,
-	kWriteBatchCmd,
+    kPaxosCmd = 1,
+    kRecoverCmd,
+    kWriteBatchCmd,
+    kSimpleCmd, // For commands in the example directory.
 };
 
 enum enumPLogType
 {
-	kPLogTypeCmd = 0,
-	kPLogTypeRes,
+    kPLogTypeCmd = 0,
+    kPLogTypeRes,
 };
 
 enum enumDBFlag
@@ -73,7 +62,7 @@ enum enumRetCode
 	eRetCodeMemCacheLimited	= -7027,
 	eRetCodeNoGroupIdlePipe	= -7028,
 
-	eRetCodeDBSubmitErr		= -7100,
+	eRetCodeDBExcuteErr		= -7100,
 	eRetCodeDBCommitErr		= -7101,
 	eRetCodeDBTurnErr		= -7102,
 	eRetCodeDBLagBehind		= -7103,
@@ -326,40 +315,6 @@ public:
 	TYPE_GET_SET(uint16_t, SubCmdID, hSubCmdID);
 	TYPE_GET_SET(int, Result, iResult);
 	TYPE_GET_SET(vector<uint64_t>, WBUUID, vecWBUUID);
-};
-
-class clsSimpleCmd : public clsClientCmd
-{
-private:
-	string m_strKey;
-	string m_strValue;
-
-public:
-	enum enumSCmdID
-	{
-		kGet = 1,
-		kSet = 2
-	};
-
-	clsSimpleCmd() : clsClientCmd(kSimpleCmd) { }
-
-	virtual ~clsSimpleCmd() { }
-
-	string GetKey() { return m_strKey; }
-	void SetKey(string strKey) { m_strKey = strKey; }
-
-	string GetValue() { return m_strValue; }
-	void SetValue(string strValue) { m_strValue = strValue; }
-
-	virtual string GetTextCmd();
-	virtual int ParseFromArray(const char *pcBuffer, uint32_t iLen);
-	virtual int SerializeToArray(char *pcBuffer, uint32_t iLen);
-
-	virtual void CalcEntityID()
-	{
-		uint32_t iHash = Hash(m_strKey);
-		m_iEntityID = iHash % ENTITY_NUM;
-	}
 };
 
 class clsWriteBatchCmd : public clsClientCmd
