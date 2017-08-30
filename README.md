@@ -2,16 +2,21 @@ PaxosStore
 ===========
 
 PaxosStore is a distributed-database inspired by Google MegaStore, it's 2nd generation of storage system used widely in WeChat. 
+PaxosStore has been deployed in WeChat production for more than two years, providing storage services for the core businesses of WeChat backend including user account management,user relationship management (i.e., contacts), instant messaging, social networking, and online payment. 
+
+Now PaxosStore is running on thousands of machines, with nealy billions of peak TPS. 
 
 Before PaxosStore, We have QuorumKV storage system, which have powered WeChat service with strong consistent read/write since 2011. As the number of storage server hit tens of thousand, the operation mantenance and development of a NWR-based service in such large scale is becoming a painful work. That's why we come up with PaxosStore: a new generation of distributed-database system, on top of leaseless paxos consensus layers, provied
  - __Two paxos consensue libraries__(open source now): 
    - **certain** component for normal PaxosLog + DB design;
    - **paxoskv** component for Key-Value(PaxosLog-as-value);
 
- - __A New SQL-like Table system__
+ (The following items are planned for open source from September to October)
  - __A high performance Key-Value system__
-
-Now PaxosStore is running on thousands of machines, powing Message/Moments/Offical Accounts/WePay serivces, with nealy billions of peak TPS. 
+ - __A system that supports rich data structures such as queues and collections__ 
+ - __A high performance storage engine based on LSM-tree__ 
+ - __A New SQL-like Table system__
+ 
 
 ### PaxosStore Architecture
 
