@@ -21,5 +21,14 @@ $ cmake ..
 $ make -j24
 ```
 
-## [Implement Details](./impl_note.md)
+## Example
+
+A simple set example by running ./build/example/membase_paxoskv
+
+## Implement Details
+- core: paxos state machine; 
+- msg_svr: paxos message server; 
+- kv: consistent read/write implement layers; 
+
+[more details](./impl_note.md)
 
