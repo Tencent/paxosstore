@@ -1,24 +1,24 @@
 PaxosStore
 ===========
 
-PaxosStore is a distributed-database inspired by Google MegaStore, it's the second generation of storage system developed to support current WeChat sevices and applications. 
-PaxosStore has been deployed in WeChat production for more than two years, providing storage services for the core businesses of WeChat backend including user account management, user relationship management (i.e., contacts), instant messaging, social networking, and online payment. 
+PaxosStore is a distributed-database initially by Google MegaStore. It's the second generation of storage system developed to support current WeChat sevice and applications. 
+PaxosStore has been deployed in WeChat production for more than two years, providing storage services for the core businesses of WeChat backend including user account management, user relationship management (i.e., contacts), instant messaging, social networking (i.e., Moments), and online payment (i.e., WeChat Pay). 
 
 Now PaxosStore is running on thousands of machines, and is able to afford billions of peak TPS. 
 
-Prior to PaxosStore, we have been using a QuorumKV storage system to support WeChat service with strongly consistent read/write since 2011. As the number of storage servers rises to tens of thousand, the operational mantenance and development of a NWR-based service in such large scale become painful. That's why we come up with PaxosStore: a new generation of distributed database, built top of the leaseless paxos consensus layers, providing
- - __Two paxos consensue libraries__(the key algorithms described in our paper published at the VLDB 2017 are now open source): 
-   - **Certain** component for normal PaxosLog + DB design;
-   - **Paxoskv** component for Key Value(PaxosLog-as-value);
+Prior to PaxosStore, we have been using a QuorumKV storage system to support various WeChat services with strongly consistent read/write since 2011. As the number of storage servers rises to tens of thousand, the operational mantenance and development of a NWR-based system in such a large scale become painful. That's why we come up with PaxosStore: a new generation of distributed database, built on top of the leaseless Paxos consensus layer, providing
+ - __Two paxos consensue libraries__ (the key algorithms described in our paper published at the VLDB 2017 are now open source): 
+   - **Certain** for the general PaxosLog + DB design;
+   - **PaxosKV** optimized for key-value storage (PaxosLog-as-value);
 
    In addition, the following items are planned for open source by October 2017.
- - __A high performance Key-Value system__
- - __A system that supports rich data structures such as queues and collections__ 
- - __A high performance storage engine based on LSM-tree__ 
+ - __A high performance key-value system__
+ - __A system that supports rich data structures such as queues, list, set and collections__ 
+ - __A high performance storage engine backed by LSM-tree__ 
  - __A New SQL-like Table system__
  
 
-### PaxosStore Architecture
+### The PaxosStore Architecture
 
 ![image](images/overall_architecture.jpg)
 
