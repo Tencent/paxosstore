@@ -7,7 +7,7 @@ PaxosStore has been deployed in WeChat production for more than two years, provi
 Now PaxosStore is running on thousands of machines, with nealy billions of peak TPS. 
 
 Before PaxosStore, We have QuorumKV storage system, which have powered WeChat service with strong consistent read/write since 2011. As the number of storage server hit tens of thousand, the operation mantenance and development of a NWR-based service in such large scale is becoming a painful work. That's why we come up with PaxosStore: a new generation of distributed-database system, on top of leaseless paxos consensus layers, provied
- - __Two paxos consensue libraries__(open source now): 
+ - __Two paxos consensue libraries__(The key algorithms mentioned in the paper published at the VLDB conference are now open source): 
    - **certain** component for normal PaxosLog + DB design;
    - **paxoskv** component for Key-Value(PaxosLog-as-value);
 
