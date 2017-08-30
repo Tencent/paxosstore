@@ -8,32 +8,20 @@
 CERTAIN_SIMPLE_EXAMPLE = 1
 CERTAIN_DEBUG = 0
 
-PROTOBUF_PATH = /home/rockzheng/QQMail/mm3rd/protobuf/src
+PROTOBUF_PATH = ./third/protobuf-3.1.0/src
 COLIB_PATH = ./third/libco-master
 LEVELDB_PATH = ./third/leveldb-1.18
 
 GXX = g++
 
-GXXFLAGS = -O2 -g -fno-strict-aliasing \
+GXXFLAGS = -O0 -g2 \
 		   -DCERTAIN_DEBUG=$(CERTAIN_DEBUG) -DCERTAIN_SIMPLE_EXAMPLE=$(CERTAIN_SIMPLE_EXAMPLE) \
 		   -Wall -Werror -std=c++11 -I./ -I./include/ \
-		   -I$(PROTOBUF_PATH) -I$(COLIB_PATH) -I$(LEVELDB_PATH)/include -I/home/rockzheng/QQMail/comm2/core -I/home/rockzheng/QQMail/comm2/core/log
+		   -I$(PROTOBUF_PATH) -I$(COLIB_PATH) -I$(LEVELDB_PATH)/include
 
 BUILDFLAGS = -static-libgcc -static-libstdc++ -std=c++11
-DLIBS = -pthread -ldl
-SLIBS = ../../lib/libcore.a /home/rockzheng/QQMail/mm3rd/protobuf/lib64_release/libprotobuf.a ../../lib/liboss.a $(COLIB_PATH)/lib/libcolib.a $(LEVELDB_PATH)/libleveldb.a \
-        ../../lib/libroutine.a \
-        ../../lib/liboss_secure.a \
-        ../../lib/liboss_basic.a \
-        ../../lib/libcrypto.a \
-        ../../lib/libssl.a \
-        ../../lib/libbasicoss.a \
-        ../../lib/libuuid.a
-
-CFLAGS = $(GXXFLAGS)
-BFLAGS = $(BUILDFLAGS)
-
-INCLS += -I$(HOME)/QQMail/comm2/core/
+DLIBS = -lpthread -ldl
+SLIBS = $(PROTOBUF_PATH)/.libs/libprotobuf.a $(COLIB_PATH)/lib/libcolib.a $(LEVELDB_PATH)/libleveldb.a
 
 #-----------------------------------------------
 
@@ -77,7 +65,7 @@ example: $(CERTAIN_EXAMPLE)
 tools: $(CERTAIN_TOOLS)
 
 Certain.pb.cc: Certain.proto
-	/home/rockzheng//QQMail/mm3rd/protobuf/bin/protoc --cpp_out=. Certain.proto
+	$(PROTOBUF_PATH)/protoc --cpp_out=. Certain.proto
 
 %.pb.o: %.pb.cc
 	$(GXX) $(GXXFLAGS) -c $^ -o $@
