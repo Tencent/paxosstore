@@ -85,7 +85,7 @@ PLogWrapper::PLogWrapper(
             }
 
             assert(0 == ins.index() || index_sofar < ins.index());
-            index_sofar == ins.index();
+            index_sofar = ins.index();
         }
     }
 }
@@ -98,7 +98,7 @@ PLogWrapper::getInstance(const uint64_t msg_index)
     assert(0 < msg_index);
     auto min_index = get_min_index(plog_impl_);
     auto max_index = get_max_index(plog_impl_);
-    assert(min_index < max_index);
+    assert(min_index <= max_index);
 
     if (msg_index != min_index && msg_index != max_index) {
         if (msg_index < max_index) {

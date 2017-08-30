@@ -9,6 +9,8 @@
 
 
 
+#include <cstring>
+
 #include "cutils/hash_utils.h"
 #include "kvclient_route.h"
 #include "kvsvrcomm.h"

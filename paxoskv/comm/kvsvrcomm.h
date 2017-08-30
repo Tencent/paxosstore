@@ -12,8 +12,9 @@
 #pragma once
 
 #include <stdint.h>
+#include <stdio.h>
 #include <arpa/inet.h>
-#include <string>
+#include <strings.h>
 
 enum{
 	COMMON_OK=0,

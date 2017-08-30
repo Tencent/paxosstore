@@ -37,6 +37,9 @@ extern const uint64_t test_reqid;
 extern const uint64_t test_logid;
 extern const std::string test_value;
 
+void set_key(paxos::Message& msg, uint64_t logid);
+
+
 void set_accepted_value(const paxos::Entry& entry, paxos::Message& msg);
 
 void set_test_accepted_value(paxos::Message& msg);

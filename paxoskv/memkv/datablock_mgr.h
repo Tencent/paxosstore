@@ -66,7 +66,11 @@ class clsDataBlockMgr {
 
     void SetLoadFlag();
 
-    enum { MAX_BLOCK_NUM = 512 };
+#if defined(SMALL_MEM)
+    enum { MAX_BLOCK_NUM = 50 };
+#else
+    enum { MAX_BLOCK_NUM = 256 }; 
+#endif
 
    private:
     int Detach();

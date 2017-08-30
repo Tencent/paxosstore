@@ -12,6 +12,7 @@
 #include "plog_helper.h"
 #include "paxos.pb.h"
 #include "err_code.h"
+#include "cutils/log_utils.h"
 
 
 namespace {
@@ -34,6 +35,16 @@ bool is_peer_chosen(uint8_t peer_status)
 
 
 namespace paxos {
+
+std::string to_paxos_key(uint64_t logid)
+{
+    std::string key;
+    key.resize(sizeof(uint64_t));
+    memcpy(&key[0], &logid, sizeof(uint64_t));
+    return key;
+}
+
+
 
 uint64_t get_min_index(const paxos::PaxosLog& plog)
 {
@@ -90,6 +101,35 @@ get_max_ins(paxos::PaxosLog& plog_impl)
 	const int entries_size = plog_impl.entries_size();
 	return 0 == entries_size ? 
 		nullptr : plog_impl.mutable_entries(entries_size - 1);
+}
+
+paxos::PaxosInstance*
+get_pending_ins(paxos::PaxosLog& plog_impl)
+{
+    auto ins = get_max_ins(plog_impl);
+    if (nullptr == ins || false == ins->chosen()) {
+        return ins;
+    }
+
+    assert(ins->chosen());
+    return nullptr;
+}
+
+std::tuple<int, std::string>
+get_value(const paxos::PaxosLog& plog, uint64_t index)
+{
+    for (int idx = 0; idx < plog.entries_size(); ++idx) {
+        auto& ins = plog.entries(idx);
+        if (ins.index() == index) {
+            if (ins.chosen() && ins.has_accepted_value()) {
+                return std::make_tuple(0, ins.accepted_value().data());
+            }
+
+            return std::make_tuple(-1, "");
+        }
+    }
+
+    return std::make_tuple(-2, "");
 }
 
 bool is_slim(const paxos::PaxosLog& plog)
@@ -163,6 +203,7 @@ paxos::PaxosLog zeros_plog()
     auto zeros_ins = plog.add_entries();
     assert(nullptr != zeros_ins);
     zeros_ins->set_index(0);
+	return plog;
 }
 
 
@@ -179,6 +220,8 @@ int can_write(
     assert(nullptr != max_ins);
     if (1 == plog.entries_size()) {
         if (false == max_ins->chosen()) {
+            logerr("enries_size %d max_ins->index %lu", 
+                    plog.entries_size(), max_ins->index());
             return 1 == max_ins->index() ? 0 : PAXOS_SET_LOCAL_OUT;
         }
 

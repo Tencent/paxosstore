@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 
 project(paxoskv_dbcomm)
 
-set(CMAKE_CXX_FLAGS " -g -Wall -std=c++11")
+set(CMAKE_CXX_FLAGS " -g -Wall -std=c++11 -DTEST_DEBUG")
 
 set(
     SOURCES
@@ -34,5 +34,10 @@ set(
 #add_subdirectory(cutils)
 
 add_library(paxoskv_dbcomm STATIC ${SOURCES})
-target_link_libraries(paxoskv_dbcomm ${PROTOBUF_LIBRARIES} ${LEVELDB_LIBRARIES} pthread)
+
+if (APPLE)
+  target_link_libraries(paxoskv_dbcomm ${PROTOBUF_LIBRARIES} ${LEVELDB_LIBRARIES} pthread)
+else ()
+  target_link_libraries(paxoskv_dbcomm ${PROTOBUF_LIBRARIES} ${LEVELDB_LIBRARIES} pthread rt)
+endif (APPLE)
 

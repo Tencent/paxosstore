@@ -35,13 +35,13 @@ void log_nothing(const char* /* format */, ...) {
 #else
 
 #define logdebug(format, ...) \
-    printf("[CONSENSUS DEBUG: %s %s %d] " format "\n", __FILE__, __func__, __LINE__, ##__VA_ARGS__)
+    printf("[DEBUG: %s %s %d] " format "\n", __FILE__, __func__, __LINE__, ##__VA_ARGS__)
 
 #define logerr(format, ...) \
-    printf("[CONSENSUS ERROR: %s %s %d] " format "\n", __FILE__, __func__, __LINE__, ##__VA_ARGS__)
+    printf("[ERROR: %s %s %d] " format "\n", __FILE__, __func__, __LINE__, ##__VA_ARGS__)
 
 #define logimpt(format, ...) \
-    printf("[CONSENSUS IMPT: %s %s %d] " format "\n", __FILE__, __func__, __LINE__, ##__VA_ARGS__)
+    printf("[IMPT: %s %s %d] " format "\n", __FILE__, __func__, __LINE__, ##__VA_ARGS__)
 
 #endif
 

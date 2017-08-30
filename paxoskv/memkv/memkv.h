@@ -55,7 +55,9 @@ public:
 	int Init(
 			uint32_t iIdxHeadSize, 
 			const char* sPLogPath, 
-			uint32_t iMaxAppendBlockNum);
+			uint32_t iMaxAppendBlockNum,
+			int idxShmKey = NEW_IDX_SHM_KEY,
+			int dataBlockShmKey = NEW_DATA_BLOCK_SHM_KEY);
 
 	int StartBuildIdx();
 

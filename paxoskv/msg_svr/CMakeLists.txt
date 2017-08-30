@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 
 project(paxoskv_msgsvr)
 
-set(CMAKE_CXX_FLAGS " -g -Wall -std=c++11 -D__MSGSVR_USE_LIBCO__")
+set(CMAKE_CXX_FLAGS " -g -Wall -std=c++11 -D__MSGSVR_USE_LIBCO__ -DTEST_DEBUG")
 
 set(
     SOURCES
@@ -25,7 +25,7 @@ set(
 #include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 add_library(paxoskv_msgsvr STATIC ${SOURCES})
-target_link_libraries(paxoskv_msgsvr pthread paxoskv_core colib)
+target_link_libraries(paxoskv_msgsvr pthread paxoskv_core colib dl)
 
 add_executable(msgsvr_example msgsvr_example.cc)
 target_link_libraries(msgsvr_example paxoskv_msgsvr)

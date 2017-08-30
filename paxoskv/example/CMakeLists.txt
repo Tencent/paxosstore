@@ -2,8 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 
 project(example)
 
-set(CMAKE_CXX_FLAGS " -g -Wall -std=c++11")
-
+set(CMAKE_CXX_FLAGS " -g -Wall -std=c++11 -DTEST_DEBUG")
 
 
 #FIND_PACKAGE(Protobuf REQUIRED)

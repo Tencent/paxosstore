@@ -10,6 +10,8 @@
 
 
 #include <pthread.h>
+#include <unistd.h>
+#include <sys/syscall.h>
 #include <cstring>
 #include <cstdio>
 #include <cassert>
@@ -337,8 +339,7 @@ clsDataBlock* clsDataBlockMgr::GetAppendBlockNew() {
     assert(2 <= m_iMaxAppendBlockNum);
     assert(MAX_BLOCK_NUM >= m_iMaxAppendBlockNum);
     if (co_is_enable_sys_hook()) {
-        uint64_t tid = 0;
-        pthread_threadid_np(nullptr, &tid);
+		pid_t tid = syscall(SYS_gettid);
         size_t idx = tid % (m_iMaxAppendBlockNum - 1);
         return GetAppendBlockNoLock(idx);
     }

@@ -76,6 +76,12 @@ void send_msg_worker(
 		PaxosMsgQueue& msg_queue, 
 		bool& stop);
 
+void post_msg_worker(
+        size_t max_batch_size, 
+        PaxosMsgQueue& msg_queue, 
+        std::function<int(const paxos::Message&)> pfn_post_msg, 
+        bool& stop);
+
      
 } // namespace paxos
 

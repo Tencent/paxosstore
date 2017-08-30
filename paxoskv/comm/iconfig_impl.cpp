@@ -10,6 +10,7 @@
 
 
 #define COMM2_LOCAL_USE
+#include <cstring>
 #include "iconfig_impl.h"
 #include "cutils/log_utils.h"
 

@@ -20,6 +20,7 @@
 #include "cutils/mem_utils.h"
 #include "cutils/time_utils.h"
 #include "cutils/id_utils.h"
+#include "cutils/log_utils.h"
 #include "msg_svr/msg_helper.h"
 #include "dbcomm/db_comm.h"
 #include "dbcomm/hashlock.h"
@@ -33,7 +34,22 @@ void AssertCheck(
         const paxos::PaxosLogHeader& header, 
         const paxos::PaxosLog& plog)
 {
-    // TODO
+    assert(header.max_index() == paxos::get_max_index(plog));
+    assert(header.chosen_index() == paxos::get_chosen_index(plog));
+    assert(header.reqid() == paxos::get_chosen_reqid(plog));
+
+    auto chosen_ins = paxos::get_chosen_ins(plog);
+    if (nullptr == chosen_ins || 0 == chosen_ins->index()) {
+        assert(0 == header.version());
+        return ;
+    }
+
+    assert(nullptr != chosen_ins);
+    assert(chosen_ins->has_accepted_value());
+    paxos::DBData data;
+    assert(data.ParseFromString(chosen_ins->accepted_value().data()));
+    assert(data.version() == header.version());
+    return ;
 }
 
 void AssertCheckValue(
@@ -56,6 +72,7 @@ int packRawValue(
 
     paxos::DBData data;
     data.set_version(header.version() + 1);
+    data.set_flag(0);
     data.set_value(user_value);
     data.set_timestamp(time(nullptr));
     if (false == data.SerializeToString(&raw_value)) {
@@ -120,7 +137,26 @@ int updateHeader(
         const paxos::PaxosLog& plog, 
         paxos::PaxosLogHeader& header)
 {
-    // TODO
+    assert(paxos::is_slim(plog));
+    header.set_max_index(paxos::get_max_index(plog));
+    if (header.chosen_index() != paxos::get_chosen_index(plog)) {
+        header.set_chosen_index(paxos::get_chosen_index(plog));
+        if (0 == header.chosen_index()) {
+            header.set_reqid(0);
+            header.set_version(0);
+            return 0;
+        }
+
+        assert(0 < header.chosen_index());
+        auto chosen_ins = paxos::get_chosen_ins(plog);
+        assert(nullptr != chosen_ins);
+        header.set_reqid(chosen_ins->accepted_value().reqid());
+        paxos::DBData data;
+        assert(data.ParseFromString(chosen_ins->accepted_value().data()));
+        header.set_version(data.version());
+    }
+
+    return 0;
 }
 
 std::unique_ptr<paxos::Message> 
@@ -221,7 +257,6 @@ int DBImpl::PostPaxosMsgNoLock(
         assert(alive_state->GetKey() == req_msg.key());
     }
 
-    // TODO
     paxos::PLogWrapper wrapper(
             req_msg.to(), member_id_, 
             req_msg.key(), alive_state.get(), plog);
@@ -230,6 +265,11 @@ int DBImpl::PostPaxosMsgNoLock(
         logerr("Step req_msg type %d ret %d from %u to %u", 
                 req_msg.type(), ret, req_msg.from(), req_msg.to());
         return ret;
+    }
+
+    if (wrapper.NeedDiskWrite()) {
+        // update header;
+        assert(0 == updateHeader(plog, header));
     }
 
     assert(0 == ret);
@@ -311,9 +351,11 @@ int DBImpl::SetNoLockNoWrite(
     }
 
     assert(0 == ret);
-    assert(0 < header.chosen_index() || 1 == header.max_index());
+    assert(0 == header.max_index() || 0 < header.chosen_index() || 1 == header.max_index());
     if (nullptr != prev_version) {
         if (*prev_version != header.version()) {
+            logerr("prev_version %u header.version %lu", 
+                    *prev_version, header.version());
             return PAXOS_SET_VERSION_OUT;
         }
     }
@@ -349,7 +391,8 @@ int DBImpl::SetNoLockNoWrite(
     assert(wrapper->NeedDiskWrite());
 
     // small update
-    header.set_max_index(paxos::get_max_index(plog));
+    // header.set_max_index(paxos::get_max_index(plog));
+    assert(0 == updateHeader(plog, header));
     AssertCheck(header, plog);
     return 0;
 }
@@ -444,7 +487,7 @@ int DBImpl::CheckReqID(
 int DBImpl::Set(
         const std::string& key, 
         const std::string& value, 
-        const uint32_t prev_version, 
+        const uint32_t* prev_version, 
         uint64_t& forward_reqid, 
         uint32_t& new_version)
 {
@@ -466,7 +509,7 @@ int DBImpl::Set(
 
             auto ret = SetNoLock(
                     key, reqid, value, 
-                    &prev_version, new_version, alive_state);
+                    prev_version, new_version, alive_state);
             if (0 != ret) {
                 logerr("SetNoLock ret %d", ret);
                 assert(nullptr == alive_state);

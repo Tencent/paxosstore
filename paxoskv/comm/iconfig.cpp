@@ -12,6 +12,7 @@
 // Config.hh
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <algorithm>

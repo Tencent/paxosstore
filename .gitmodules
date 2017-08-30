@@ -1,0 +1,6 @@
+[submodule "paxoskv/googletest"]
+	path = paxoskv/googletest
+	url = https://github.com/google/googletest
+[submodule "paxoskv/libco"]
+	path = paxoskv/libco
+	url = https://github.com/Tencent/libco

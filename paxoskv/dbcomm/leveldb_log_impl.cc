@@ -13,7 +13,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
-// #include <malloc.h>
 #include <errno.h>
 #include <algorithm>
 #include <sstream>
@@ -35,6 +34,7 @@
 #if defined(__APPLE__)
 #define memalign(a, b) malloc(b)
 #else
+#include <malloc.h>
 #endif
 
 //#define DEFAULT_BLOCK_SIZE 4 * 1024

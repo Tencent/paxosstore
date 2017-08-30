@@ -283,7 +283,7 @@ int clsUniversalBatch::AddReqImpl(void* ptReq, void* ptRsp, int& iRet, int iReal
     }
 
     assert(0 <= m_iWaitTime);
-    if (m_iBatchCnt <= lpNode->iBatchSize || llDiff >= m_iWaitTime)
+    if (m_iBatchCnt <= lpNode->iBatchSize || llDiff >= (uint64_t)m_iWaitTime)
     // llDiff >= static_cast<uint64_t>(m_iWaitTime))
     {
         Node_t* pNode = TakeFirstNotEmptyNode(&m_tList);

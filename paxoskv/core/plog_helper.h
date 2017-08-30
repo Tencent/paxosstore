@@ -19,6 +19,8 @@ namespace paxos {
 class PaxosLog;
 class PaxosInstance;
 
+std::string to_paxos_key(uint64_t logid);
+
 uint64_t get_min_index(const paxos::PaxosLog& plog);
 
 uint64_t get_max_index(const paxos::PaxosLog& plog);
@@ -33,12 +35,17 @@ bool has_pending_ins(const paxos::PaxosLog& plog);
 const paxos::PaxosInstance* 
 get_chosen_ins(const paxos::PaxosLog& plog);
 
+paxos::PaxosInstance* get_pending_ins(paxos::PaxosLog& plog);
+
 paxos::PaxosInstance* get_max_ins(paxos::PaxosLog& plog);
 
 inline const paxos::PaxosInstance*
 get_max_ins(const paxos::PaxosLog& plog) {
     return get_max_ins(const_cast<paxos::PaxosLog&>(plog));
 }
+
+std::tuple<int, std::string> 
+get_value(const paxos::PaxosLog& plog, uint64_t index);
 
 bool is_slim(const paxos::PaxosLog& plog);
 

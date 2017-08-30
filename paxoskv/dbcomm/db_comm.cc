@@ -14,6 +14,9 @@
 #include <sys/time.h>
 #include <sys/param.h>
 #include <sys/mount.h>
+#if !defined(__APPLE__)
+#include <sys/statfs.h>
+#endif
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
