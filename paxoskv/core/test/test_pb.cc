@@ -16,6 +16,7 @@
 #include <cassert>
 #include <cstdio>
 #include <cstdlib>
+#include <arpa/inet.h>
 #include "core/paxos.pb.h"
 #include "cutils/mem_utils.h"
 #include "cutils/time_utils.h"
