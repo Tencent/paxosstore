@@ -23,7 +23,10 @@ $ make -j24
 
 ## Example
 
-A simple set example by running ./build/example/membase_paxoskv
+A simple set example by running 
+```bash
+$ ./build/example/membase_paxoskv
+```
 
 ## Implement Details
 - core: paxos state machine; 
