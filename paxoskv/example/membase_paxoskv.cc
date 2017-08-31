@@ -138,7 +138,7 @@ std::map<int, KVSvrConfig> GetFakeKVSvrConfigs()
 
 	ret[1] = KVSvrConfig("127.0.0.1", 13301, 1);
 	ret[2] = KVSvrConfig("127.0.0.1", 13302, 2);
-	//ret[3] = KVSvrConfig("127.0.0.1", 13303, 3);
+	ret[3] = KVSvrConfig("127.0.0.1", 13303, 3);
 
 	return ret;
 }
@@ -229,7 +229,7 @@ void LaunchKVSvr(
 	{
 		sleep(2);
 
-		if (config.member_id == 1) 
+		//if (config.member_id == 1) 
 		{
 			uint64_t logid = 10;
 			std::string key;
