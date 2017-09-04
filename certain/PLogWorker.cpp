@@ -770,7 +770,8 @@ void *clsPLogWorker::WakeUpRoutine(void * arg)
 
 	int iFD = pPLogWorker->m_iNotifyFd;
 
-	co_add_persist_event(co_get_epoll_ct(), iFD, POLLIN);
+    // TODO: ? fix
+	// co_add_persist_event(co_get_epoll_ct(), iFD, POLLIN);
 	char buff[1024] = {0};
 	for ( ;; )
 	{
