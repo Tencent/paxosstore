@@ -1,12 +1,14 @@
 #pragma once
 
 #include "utils/Header.h"
-#include "iOssAttr.h"
+//#include "iOssAttr.h"
 
-//inline void OssAttrInc(int iKey, int iID, int iCnt)
-//{
-//
-//}
+inline void OssAttrInc(int iKey, int iID, int iCnt)
+{
+
+}
+
+#if defined( __LIBCO_RDTSCP__)
 
 inline uint64_t _GetTickCount()
 {
@@ -46,6 +48,8 @@ inline uint64_t _GetCpuHz()
     static uint64_t u = getCpuKhz() * 1000;
     return u;
 }
+
+#endif
 
 inline void SetRoutineID(uint32_t iID)
 {
