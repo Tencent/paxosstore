@@ -1,7 +1,7 @@
 PaxosStore
 ===========
 
-PaxosStore is a distributed-database initially by Google MegaStore. It's the second generation of storage system developed to support current WeChat sevice and applications. 
+PaxosStore is a distributed-database initially inspired by Google MegaStore. It's the second generation of storage system developed to support current WeChat sevice and applications. 
 PaxosStore has been deployed in WeChat production for more than two years, providing storage services for the core businesses of WeChat backend including user account management, user relationship management (i.e., contacts), instant messaging, social networking (i.e., Moments), and online payment (i.e., WeChat Pay). 
 
 Now PaxosStore is running on thousands of machines, and is able to afford billions of peak TPS. 
