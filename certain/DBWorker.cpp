@@ -290,7 +290,7 @@ void clsDBWorker::MultiRunApplyTask(clsClientCmd ** ppClientCmd, int iCnt)
 	map<uint64_t, uint32_t> mapEntity;
 	int iRet = -1;
 	uint64_t * pMaxTaskEntry = (uint64_t*)calloc(sizeof(uint64_t), iCnt);
-	auto_ptr<char> autofree((char*)pMaxTaskEntry);
+    clsAutoFree<char> oAuto((char *)pMaxTaskEntry);
 
 	for(int i=0; i<iCnt; i++)
 	{

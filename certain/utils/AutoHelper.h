@@ -47,6 +47,17 @@ public:
 };
 
 template<typename Type>
+class clsAutoFree
+{
+private:
+	Type *m_pType;
+
+public:
+	clsAutoFree(Type *pType) : m_pType(pType) { }
+	~clsAutoFree() { delete m_pType, m_pType = NULL; }
+};
+
+template<typename Type>
 class clsAutoMultiDelete
 {
 private:

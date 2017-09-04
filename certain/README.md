@@ -4,13 +4,9 @@ Certain is an asynchronous implementation of paxos log.
 
 # build simple_srv and simple_cli
 
-	1) download leveldb(https://github.com/google/leveldb/tree/v1.18), move to third/leveldb-1.18 and make,
+	1) sh third/autogen.sh;
 
-	2) download protobuf(https://github.com/google/protobuf/tree/v3.1.0), move to third/protobuf-3.1.0 and make,
-
-	3) download libco(https://github.com/Tencent/libco), move to third/libco-master and make,
-
-	4) cd certain; make -j 10 example;
+	2) make -j 4 example;
 
 # play
 
