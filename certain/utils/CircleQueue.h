@@ -133,7 +133,7 @@ int clsCircleQueue<Type>::MultiTakeByOneThread(Type *ptElt, int iMaxCnt)
 	}
 
 	unsigned long iCnt = m_ulHead - m_ulTail;
-	iMaxCnt = (iCnt <= iMaxCnt ? iCnt : iMaxCnt);
+	iMaxCnt = (iCnt <= (unsigned long)iMaxCnt ? iCnt : iMaxCnt);
 
 	for(int i=0; i<iMaxCnt; i++)
 	{
