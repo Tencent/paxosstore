@@ -20,7 +20,7 @@ GXXFLAGS = -O0 -g2 \
 		   -I$(PROTOBUF_PATH) -I$(COLIB_PATH) -I$(LEVELDB_PATH)/include
 
 BUILDFLAGS = -static-libgcc -static-libstdc++ -std=c++11
-DLIBS = -lpthread -ldl
+DLIBS = -pthread -ldl
 SLIBS = $(PROTOBUF_PATH)/.libs/libprotobuf.a $(COLIB_PATH)/lib/libcolib.a $(LEVELDB_PATH)/libleveldb.a
 
 #-----------------------------------------------
@@ -61,7 +61,7 @@ CERTAIN_OBJS = 	Certain.pb.o \
 				GetAllWorker.o
 
 default: $(CERTAIN_LIBS)
-example: $(CERTAIN_EXAMPLE)
+example: $(CERTAIN_LIBS) $(CERTAIN_EXAMPLE)
 tools: $(CERTAIN_TOOLS)
 
 Certain.pb.cc: Certain.proto
@@ -73,7 +73,7 @@ Certain.pb.cc: Certain.proto
 %.o: %.cpp
 	$(GXX) $(GXXFLAGS) -c $^ -o $@
 
-BUILD_EXEC=$(GXX) $(BUILDFLAGS) $(DLIBS) $^ -o $@ $(SLIBS)
+BUILD_EXEC=$(GXX) $(BUILDFLAGS) $^ -o $@ $(SLIBS) $(DLIBS)
 
 lib: $(CERTAIN_LIBS)
 

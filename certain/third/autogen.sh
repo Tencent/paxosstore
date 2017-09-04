@@ -3,7 +3,7 @@ cd third;
 # download leveldb(https://github.com/google/leveldb/tree/v1.18), move to third/leveldb-1.18 and make,
 wget https://github.com/google/protobuf/archive/v3.1.0.zip;
 unzip v3.1.0.zip;
-cd protobuf-3.1.0; make -j 4; cd ..;
+cd protobuf-3.1.0; sh autogen.sh; ./configure; make -j 4; cd ..;
 
 # download protobuf(https://github.com/google/protobuf/tree/v3.1.0), move to third/protobuf-3.1.0 and make,
 wget https://github.com/google/leveldb/archive/v1.18.zip
