@@ -8,12 +8,6 @@
 namespace Certain
 {
 
-#define TIMERUS_START(x) uint64_t x = _GetTickCount()
-#define TIMERUS_STOP(x)  x = (_GetTickCount() - x) / (_GetCpuHz() / 1000000)
-
-#define TIMERMS_START(x) uint64_t x = _GetTickCount()
-#define TIMERMS_STOP(x)  x = (_GetTickCount() - x) / (_GetCpuHz() / 1000)
-
 inline uint64_t GetCurrTimeUS()
 {
 	struct timeval tv;
@@ -29,6 +23,22 @@ inline uint64_t GetCurrTimeMS()
 
 	return (uint64_t)tv.tv_sec * 1000 + tv.tv_usec / 1000;
 }
+
+
+#if defined( __LIBCO_RDTSCP__)
+#define TIMERUS_START(x) uint64_t x = _GetTickCount()
+#define TIMERUS_STOP(x)  x = (_GetTickCount() - x) / (_GetCpuHz() / 1000000)
+
+#define TIMERMS_START(x) uint64_t x = _GetTickCount()
+#define TIMERMS_STOP(x)  x = (_GetTickCount() - x) / (_GetCpuHz() / 1000)
+#else
+#define TIMERUS_START(x) uint64_t x = Certain::GetCurrTimeUS()
+#define TIMERUS_STOP(x) x = Certain::GetCurrTimeUS() - x
+
+#define TIMERMS_START(x) uint64_t x = Certain::GetCurrTimeMS()
+#define TIMERMS_STOP(x) x = Certain::GetCurrTimeMS() - x
+
+#endif
 
 inline uint32_t GetCurrTime()
 {

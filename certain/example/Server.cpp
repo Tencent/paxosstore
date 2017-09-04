@@ -4,7 +4,7 @@
 #include "PLogImpl.h"
 #include "UserWorker.h"
 
-#include "iLogInternal.h"
+#include "Logger.h"
 
 static volatile uint8_t g_iStopFlag;
 
@@ -23,7 +23,7 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-    Comm::OpenLog("simple", 3, "/home/qspace/log/");
+    Certain::OpenLog("/home/qspace/log/", 3, 1, 1);
 
 	clsCertainUserImpl oImpl;
 
