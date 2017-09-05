@@ -4,7 +4,6 @@
 [submodule "paxoskv/libco"]
 	path = paxoskv/libco
 	url = https://github.com/Tencent/libco
-
 [submodule "certain/third/protobuf"]
 	path = certain/third/protobuf
 	url = https://github.com/google/protobuf
