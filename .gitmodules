@@ -5,12 +5,12 @@
 	path = paxoskv/libco
 	url = https://github.com/Tencent/libco
 
-[submodule "certain/protobuf"]
-	path = certain/protobuf
+[submodule "certain/third/protobuf"]
+	path = certain/third/protobuf
 	url = https://github.com/google/protobuf
-[submodule "certain/leveldb"]
-	path = certain/leveldb
+[submodule "certain/third/leveldb"]
+	path = certain/third/leveldb
 	url = https://github.com/google/leveldb
-[submodule "certain/libco"]
-	path = certain/libco
+[submodule "certain/third/libco"]
+	path = certain/third/libco
 	url = https://github.com/Tencent/libco
