@@ -4,8 +4,6 @@
 #include "PLogImpl.h"
 #include "UserWorker.h"
 
-#include "utils/Logger.h"
-
 static volatile uint8_t g_iStopFlag;
 
 void SetStopFlag(int iSig)
@@ -23,14 +21,16 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-    Certain::OpenLog("/home/qspace/log/", 3, 1, 1);
-
 	clsCertainUserImpl oImpl;
+
+    // Help parse the PLogPath and DBPath.
+    Certain::clsConfigure oConf(NULL);
+	assert(oConf.LoadFromOption(argc, argv) == 0);
 
     leveldb::DB* plog = NULL;
     {
         leveldb::Status s;
-        string dbname = "/home/qspace/data/simple/plog";
+        string dbname = oConf.GetPLogPath();
 
         leveldb::Options opts;
         opts.create_if_missing = true;
@@ -44,7 +44,7 @@ int main(int argc, char **argv)
     leveldb::DB* db = NULL;
     {
         leveldb::Status s;
-        string dbname = "/home/qspace/data/simple/db";
+        string dbname = oConf.GetDBPath();
 
         leveldb::Options opts;
         opts.create_if_missing = true;

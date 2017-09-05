@@ -140,12 +140,24 @@ int clsConfigure::LoadFromOption(int iArgc, char *pArgv[])
 	clsValueBase *poValue;
 	optind = 1;
 
-	while ((opt = getopt(iArgc, pArgv, "c:n:i:a:e:s:")) != -1)
+	while ((opt = getopt(iArgc, pArgv, "c:l:p:d:n:i:a:e:s:")) != -1)
 	{
 		switch(opt)
 		{
 		case 'c':
 			m_strFilePath = optarg;
+			break;
+
+		case 'l':
+			m_strLogPath = optarg;
+			break;
+
+		case 'p':
+			m_strPLogPath = optarg;
+			break;
+
+		case 'd':
+			m_strDBPath = optarg;
 			break;
 
 		case 'n':
@@ -171,9 +183,6 @@ int clsConfigure::LoadFromOption(int iArgc, char *pArgv[])
 		case 's':
             s_strConfSuffix = optarg;
 			break;
-
-		default:
-			assert(false);
 		}
 
 		if (iRet != 0)
@@ -301,8 +310,10 @@ int clsConfigure::AddVariables()
 
 	ADD_UINT32(RandomDropRatio, 0);
 
-	AddString(m_strPerfLogPath, "PerfLogPath", "/home/qspace/data/kvsvr/certain");
-	AddString(m_strLogPath, "LogPath", "/home/qspace/log/certain");
+	AddString(m_strPerfLogPath, "PerfLogPath", "/home/rockzheng/certain/perflog");
+	AddString(m_strLogPath, "LogPath", "/home/rockzheng/certain/log");
+	AddString(m_strPLogPath, "PLogPath", "/home/rockzheng/certain/plog");
+	AddString(m_strDBPath, "DBPath", "/home/rockzheng/certain/db");
 
 	vector<InetAddr_t> vecDefault;
 	AddInetAddrs(m_vecServerAddr, "ServerAddrs",

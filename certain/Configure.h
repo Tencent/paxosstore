@@ -235,6 +235,8 @@ private:
 
 	string m_strPerfLogPath;
 	string m_strLogPath;
+    string m_strPLogPath;
+    string m_strDBPath;
 
 	map<string, clsValueBase *> m_tKeyMap;
 
@@ -422,6 +424,14 @@ public:
 	{
 		return m_strLogPath.c_str();
 	}
+    const char *GetPLogPath()
+    {
+        return m_strPLogPath.c_str();
+    }
+    const char *GetDBPath()
+    {
+        return m_strDBPath.c_str();
+    }
 
 	//TYPE_GET_SET(vector<InetAddr_t>, ServerAddrs, vecServerAddr);
 	const vector<InetAddr_t>& GetServerAddrs()

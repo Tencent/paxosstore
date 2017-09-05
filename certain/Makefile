@@ -8,9 +8,9 @@
 CERTAIN_SIMPLE_EXAMPLE = 1
 CERTAIN_DEBUG = 0
 
-PROTOBUF_PATH = ./third/protobuf-3.1.0/src
-COLIB_PATH = ./third/libco-master
-LEVELDB_PATH = ./third/leveldb-1.18
+PROTOBUF_PATH = ./third/protobuf/src
+COLIB_PATH = ./third/libco
+LEVELDB_PATH = ./third/leveldb
 
 GXX = g++
 
@@ -21,7 +21,7 @@ GXXFLAGS = -O0 -g2 \
 
 BUILDFLAGS = -static-libgcc -static-libstdc++ -std=c++11
 DLIBS = -pthread -ldl
-SLIBS = $(PROTOBUF_PATH)/.libs/libprotobuf.a $(COLIB_PATH)/lib/libcolib.a $(LEVELDB_PATH)/libleveldb.a
+SLIBS = $(PROTOBUF_PATH)/.libs/libprotobuf.a $(COLIB_PATH)/lib/libcolib.a $(LEVELDB_PATH)/out-static/libleveldb.a
 
 #-----------------------------------------------
 

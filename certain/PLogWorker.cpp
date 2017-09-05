@@ -765,13 +765,13 @@ void clsPLogWorker::DoWithPaxosCmd(clsPaxosCmd *poPaxosCmd)
 
 void *clsPLogWorker::WakeUpRoutine(void * arg)
 {
+    /*
 	PLogRoutine_t * pPLogRoutine = (PLogRoutine_t *)arg;
 	clsPLogWorker * pPLogWorker = (clsPLogWorker * )pPLogRoutine->pSelf;
 
 	int iFD = pPLogWorker->m_iNotifyFd;
 
-    // TODO: ? fix
-	// co_add_persist_event(co_get_epoll_ct(), iFD, POLLIN);
+	co_add_persist_event(co_get_epoll_ct(), iFD, POLLIN);
 	char buff[1024] = {0};
 	for ( ;; )
 	{
@@ -787,6 +787,7 @@ void *clsPLogWorker::WakeUpRoutine(void * arg)
 			break;
 		}
 	}
+    */
 
 	return NULL;
 }
@@ -923,7 +924,7 @@ void clsPLogWorker::Run()
         printf("PLogWorker idx %d Routine idx %d\n", m_iWorkerID,  iRoutineID);
         CertainLogImpt("PLogWorker idx %d Routine idx %d", m_iWorkerID,  iRoutineID);
 	}
-
+/*
 	{
 		PLogRoutine_t *w = (PLogRoutine_t*)calloc( 1,sizeof(PLogRoutine_t) );
 		stCoRoutine_t *co = NULL;
@@ -936,7 +937,7 @@ void clsPLogWorker::Run()
 		w->iRoutineID = m_iStartRoutineID + m_poConf->GetPLogRoutineCnt();
 		co_resume( (stCoRoutine_t *)(w->pCo) );
 	}
-
+*/
 	co_eventloop( ev, CoEpollTick, this);
 }
 

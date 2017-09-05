@@ -124,7 +124,7 @@ public:
 
 		m_poCoWorkList = new stack<PLogRoutine_t*>;
 
-		clsWakeUpPipeMng::GetInstance()->NewPipe(m_iNotifyFd);
+		//clsWakeUpPipeMng::GetInstance()->NewPipe(m_iNotifyFd);
 	}
 
 	virtual ~clsPLogWorker()

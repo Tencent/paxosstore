@@ -6,9 +6,6 @@ libcertain.a
 simple_cli
 simple_srv
 simple_st
-third/leveldb-1.18/
-third/libco-master/
-third/master.zip
-third/protobuf-3.1.0/
-third/v1.18.zip
-third/v3.1.0.zip
+third/leveldb/*
+third/libco/*
+third/protobuf/*
