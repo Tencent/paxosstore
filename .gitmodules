@@ -4,3 +4,13 @@
 [submodule "paxoskv/libco"]
 	path = paxoskv/libco
 	url = https://github.com/Tencent/libco
+
+[submodule "certain/protobuf"]
+	path = certain/protobuf
+	url = https://github.com/google/protobuf
+[submodule "certain/leveldb"]
+	path = certain/leveldb
+	url = https://github.com/google/leveldb
+[submodule "certain/libco"]
+	path = certain/libco
+	url = https://github.com/Tencent/libco
