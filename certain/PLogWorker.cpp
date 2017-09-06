@@ -106,7 +106,7 @@ void clsPLogBase::PrintUseTimeStat()
 }
 
 int clsPLogBase::GetRecord(uint64_t iEntityID, uint64_t iEntry,
-		EntryRecord_t &tSrcRecord, const EntryRecord_t *ptDestRecord)
+		EntryRecord_t &tSrcRecord)
 {
 #if CERTAIN_DEBUG
 	RETURN_RANDOM_ERROR_WHEN_IN_DEBUG_MODE();
@@ -162,32 +162,6 @@ int clsPLogBase::GetRecord(uint64_t iEntityID, uint64_t iEntry,
 	{
 		if (!tSrcRecord.tValue.bHasValue)
 		{
-			if (ptDestRecord != NULL
-					&& ptDestRecord->tValue.iValueID == iValueID)
-			{
-				tSrcRecord.tValue.bHasValue = true;
-#if CERTAIN_DEBUG
-				if (ptDestRecord->tValue.bHasValue)
-				{
-					tSrcRecord.tValue.strValue = ptDestRecord->tValue.strValue;
-					iRet = GetValue(iEntityID, iEntry, iValueID, strTemp);
-					if (iRet != 0)
-					{
-						CertainLogFatal("E(%lu, %lu) GetValue ret %d",
-								iEntityID, iEntry, iRet);
-					}
-
-					if (strTemp != tSrcRecord.tValue.strValue)
-					{
-						CertainLogFatal("E(%lu, %lu) size(%lu, %lu) CRC32(%u, %u)",
-								iEntityID, iEntry,
-								strTemp.size(), tSrcRecord.tValue.strValue.size(),
-								CRC32(strTemp), CRC32(tSrcRecord.tValue.strValue));
-					}
-				}
-#endif
-			}
-			else
 			{
 				TIMERUS_START(iGetValueUseTimeUS);
 				iRet = GetValue(iEntityID, iEntry, iValueID, strTemp);
@@ -225,11 +199,6 @@ int clsPLogBase::GetRecord(uint64_t iEntityID, uint64_t iEntry,
 		CertainLogFatal("E(%lu, %lu) CheckEntryRecord ret %d",
 				iEntityID, iEntry, iRet);
 		return -5;
-	}
-
-	if (ptDestRecord != NULL && ptDestRecord->tValue.iValueID == iValueID)
-	{
-		tSrcRecord.tValue.bHasValue = false;
 	}
 
 	return 0;
@@ -381,8 +350,7 @@ int clsPLogWorker::DoWithPLogRequest(clsPaxosCmd *poPaxosCmd)
 	if (poPaxosCmd->IsPLogReturn())
 	{
 		EntryRecord_t tSrcRecord;
-		const EntryRecord_t& tDestRecord = poPaxosCmd->GetDestRecord();
-		iRet = m_poPLogEngine->GetRecord(iEntityID, iEntry, tSrcRecord, &tDestRecord);
+		iRet = m_poPLogEngine->GetRecord(iEntityID, iEntry, tSrcRecord);
 		if(iRet == 0)
 		{
 			CertainLogInfo("record: %s bChose %d", EntryRecordToString(tSrcRecord).c_str(), tSrcRecord.bChosen);
