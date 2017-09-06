@@ -38,63 +38,6 @@ int clsCertainWrapper::GetEntityInfo(uint64_t iEntityID, EntityInfo_t &tEntityIn
 	return 0;
 }
 
-int clsCertainWrapper::GetEntrys(uint64_t iEntityID, uint64_t iStartEntry,
-		std::vector< std::pair<uint64_t, std::string> >& vecEntry)
-{
-	if(iStartEntry > 0)
-	{
-		iStartEntry --;
-	}
-	vector< std::pair<uint64_t, std::string> >  tmpEntry;
-
-	bool bHasMore = false;
-	int iRet = m_poPLogEngine->LoadUncommitedEntrys(iEntityID, iStartEntry, -1, tmpEntry, bHasMore);
-	for(uint32_t i=0; i< tmpEntry.size(); i++)
-	{
-		uint64_t iEntry = tmpEntry[i].first;
-		const string strRecord = tmpEntry[i].second;
-		EntryRecord_t tRecord;
-		int iRet1 = StringToEntryRecord(strRecord, tRecord);
-		AssertEqual(iRet1, 0);
-
-		if (tRecord.tValue.iValueID > 0 && !tRecord.tValue.bHasValue)
-		{
-			iRet = m_poPLogEngine->GetValue(iEntityID, iEntry,
-					tRecord.tValue.iValueID, tRecord.tValue.strValue);
-			if (iRet != 0)
-			{
-				CertainLogFatal("BUG GetValue ret %d E(%lu, %lu) record %s",
-						iRet, iEntityID, iEntry,
-						EntryRecordToString(tRecord).c_str());
-				return iRet;
-			}
-			tRecord.tValue.bHasValue = true;
-		}
-
-		string sFullRecord;
-		EntryRecordToString(tRecord, sFullRecord);
-		if(tRecord.iStoredValueID == tRecord.tValue.iValueID)
-		{
-			sFullRecord.append(tRecord.tValue.strValue);
-		}
-
-		vecEntry.push_back(pair<uint64_t, string>(iEntry, sFullRecord));
-	}
-	return iRet;
-}
-
-int clsCertainWrapper::GetMaxCommitedPos(uint64_t iEntityID, uint64_t & iEntry)
-{
-	uint32_t iFlag = 0;
-	return m_poDBEngine->LoadMaxCommitedEntry(iEntityID, iEntry, iFlag);
-}
-
-int clsCertainWrapper::GetMetaInfo(uint64_t iEntityID, uint64_t & iEntry, uint32_t & iSeq)
-{
-	uint32_t iFlag = 0;
-	return m_poDBEngine->LoadMaxCommitedEntry(iEntityID, iEntry, iFlag, iSeq);
-}
-
 int clsCertainWrapper::ExplicitGetAll(uint64_t iEntityID)
 {
     // Notify entityworker to GetAll if it is not GetAlling.

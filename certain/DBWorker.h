@@ -25,8 +25,6 @@ private:
 		void * pData;
 		bool bHasJob;
 		int iRoutineID;
-		void * pMultiData[MAX_BATCH_CNT];
-		int iMultiDataCnt;
 		clsDBWorker * pSelf;
 	};
 
@@ -38,7 +36,6 @@ private:
 	uint32_t m_iStartRoutineID;
 
 	void RunApplyTask(clsClientCmd *poCmd, uint64_t &iLoopCnt);
-	void MultiRunApplyTask(clsClientCmd ** ppClientCmd, int iCnt);
 
 public:
 	clsDBWorker(uint32_t iWorkerID, clsConfigure *poConf,
@@ -69,7 +66,6 @@ public:
 	static int EnterDBReqQueue(clsClientCmd *poCmd);
 
 	static int CoEpollTick(void * arg);
-	static int DBBatch(void * arg);
 	static int DBSingle(void * arg);
 	static void * DBRoutine(void * arg);
 	static int NotifyDBWorker(uint64_t iEntityID);

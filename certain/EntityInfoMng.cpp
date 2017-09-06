@@ -674,15 +674,6 @@ clsAutoEntityLock::clsAutoEntityLock(uint64_t iEntityID)
 	po->GetCertainUser()->LockEntity(m_iEntityID, &m_pLockInfo);
 }
 
-clsAutoEntityLock::clsAutoEntityLock(std::map<uint64_t, uint32_t> & mapEntity)
-{
-	m_pLockInfo = NULL;
-
-	clsCertainWrapper *po = clsCertainWrapper::GetInstance();
-
-	po->GetCertainUser()->BatchLockEntity(mapEntity, &m_pLockInfo);
-}
-
 clsAutoEntityLock::~clsAutoEntityLock()
 {
 	clsCertainWrapper *po = clsCertainWrapper::GetInstance();

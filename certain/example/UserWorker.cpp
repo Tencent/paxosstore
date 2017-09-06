@@ -142,7 +142,7 @@ void clsUserWorker::Run()
 	stCoEpoll_t * ev = co_get_epoll_ct();
 
     uint32_t m_iStartRoutineID = 0;
-	for(int i=0; i<100; i++)
+    for (int i = 0; i < 48; ++i)
 	{
 		UserRoutine_t *w = (UserRoutine_t*)calloc( 1,sizeof(UserRoutine_t) );
 		stCoRoutine_t *co = NULL;

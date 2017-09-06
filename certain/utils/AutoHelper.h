@@ -58,29 +58,6 @@ public:
 };
 
 template<typename Type>
-class clsAutoMultiDelete
-{
-private:
-	vector<Type *> m_vecType;
-
-public:
-	void Add(Type *pType)
-	{
-		m_vecType.push_back(pType);
-	}
-	~clsAutoMultiDelete()
-	{
-		for (auto iter = m_vecType.rbegin(); iter != m_vecType.rend(); ++iter)
-		{
-			if (*iter != NULL)
-			{
-				delete *iter, *iter = NULL;
-			}
-		}
-	}
-};
-
-template<typename Type>
 class clsAutoFreeObjPtr
 {
 private:

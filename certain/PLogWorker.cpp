@@ -367,53 +367,6 @@ int clsPLogBase::PutRecord(uint64_t iEntityID, uint64_t iEntry,
 	return 0;
 }
 
-int clsPLogBase::PutRecord(uint64_t iEntityID, uint64_t iEntry,
-		EntryRecord_t tRecord, vector<PLogReq_t> &vecPLogReq)
-{
-	int iRet;
-	string strRecord;
-	PLogReq_t tPLogReq;
-
-	iRet = CheckEntryRecord(tRecord);
-	if (iRet != 0)
-	{
-		CertainLogFatal("E(%lu, %lu) CheckEntryRecord ret %d",
-				iEntityID, iEntry, iRet);
-		return -1;
-	}
-
-	if (!tRecord.bChosen)
-	{
-		if (tRecord.iStoredValueID != tRecord.tValue.iValueID
-				&& tRecord.tValue.iValueID > 0)
-		{
-			tPLogReq.iEntityID = iEntityID;
-			tPLogReq.iEntry = iEntry;
-			tPLogReq.iValueID = tRecord.tValue.iValueID;
-			tPLogReq.strData = tRecord.tValue.strValue;
-			vecPLogReq.push_back(tPLogReq);
-
-			tRecord.iStoredValueID = tRecord.tValue.iValueID;
-		}
-	}
-
-	iRet = EntryRecordToString(tRecord, strRecord);
-	if (iRet != 0)
-	{
-		CertainLogFatal("E(%lu, %lu) EntryRecordToString ret %d",
-				iEntityID, iEntry, iRet);
-		return -2;
-	}
-
-	tPLogReq.iEntityID = iEntityID;
-	tPLogReq.iEntry = iEntry;
-	tPLogReq.iValueID = 0;
-	tPLogReq.strData = strRecord;
-	vecPLogReq.push_back(tPLogReq);
-
-	return 0;
-}
-
 void clsPLogWorker::SendToWriteWorker(clsPaxosCmd *poPaxosCmd)
 {
     assert(false);

@@ -250,7 +250,6 @@ private:
 	void *m_pLockInfo;
 
 public:
-	clsAutoEntityLock(std::map<uint64_t, uint32_t> & mapEntity);
 	clsAutoEntityLock(uint64_t iEntityID);
 	~clsAutoEntityLock();
 };

@@ -21,6 +21,13 @@ struct EntityMeta_t
 	uint32_t iDBFlag;
 };
 
+struct EntryValue_t
+{
+    uint64_t iEntityID;
+    uint64_t iEntry;
+    string strValue;
+};
+
 struct PLogEntityMeta_t
 {
 	uint64_t iMaxPLogEntry;
@@ -116,25 +123,11 @@ public:
 
 };
 
-// iValue == 0 for PutRecord, iValue > 0 for PutValue
-struct PLogReq_t
-{
-	uint64_t iEntityID;
-	uint64_t iEntry;
-	uint64_t iValueID;
-	string strData;
-};
-
 class clsPLogBase
 {
 public:
 	virtual ~clsPLogBase()
 	{
-	}
-	virtual int MultiPut(const vector<PLogReq_t> &vecPLogReq)
-	{
-		assert(false);
-		return -1;
 	}
 
 	virtual int PutValue(uint64_t iEntityID, uint64_t iEntry,
@@ -167,7 +160,6 @@ public:
 
 	int GetRecord(uint64_t iEntityID, uint64_t iEntry, EntryRecord_t &tSrcRecord, const EntryRecord_t* ptDestRecord = NULL);
 	int PutRecord(uint64_t iEntityID, uint64_t iEntry, uint64_t iMaxPLogEntry, EntryRecord_t tRecord);
-	int PutRecord(uint64_t iEntityID, uint64_t iEntry, EntryRecord_t tRecord, vector<PLogReq_t> &vecPLogReq);
 
 	static void PrintUseTimeStat();
 	static void InitUseTimeStat();
@@ -179,12 +171,6 @@ public:
 	virtual ~clsDBBase()
 	{
 	}
-	struct KeyValue_t 
-	{
-		uint64_t iEntity;
-		uint64_t iEntry;
-		std::string  * pStrValue;
-	};
 
 	virtual int ExcuteCmd(clsClientCmd *poClientCmd, string &strWriteBatch)
 	{
@@ -196,7 +182,7 @@ public:
 	virtual int Commit(uint64_t iEntityID, uint64_t iEntry,
 			const string &strWriteBatch) = 0;
 
-	virtual int MultiCommit(KeyValue_t * pRec, int iCnt)
+	virtual int MultiCommit(vector<EntryValue_t> vecEntryValue)
 	{
 		assert(false);
 		return -1;
@@ -210,13 +196,6 @@ public:
         assert(false);
         return -1;
     }
-
-	virtual int LoadMaxCommitedEntry(uint64_t iEntityID,
-			uint64_t &iCommitedEntry, uint32_t &iFlag, uint32_t & iSeq)
-	{
-		return -1;
-	}	
-
 
 	static int MultiCommit(uint64_t iEntityID, uint64_t iMaxCommitedEntry, uint64_t iMaxTaskEntry);
 };
@@ -285,11 +264,7 @@ public:
 
 	int EntityCatchUp(uint64_t iEntityID, uint64_t &iMaxCommitedEntry);
 
-	int GetMaxCommitedPos(uint64_t iEntityID, uint64_t &iEntry);
-	int GetMetaInfo(uint64_t iEntityID, uint64_t & iEntry, uint32_t & iSeq);
 	int GetMaxChosenEntry(uint64_t iEntityID, uint64_t &iMaxChosenEntry);
-
-	int GetEntrys(uint64_t iEntityID, uint64_t iStartEntry, std::vector< std::pair<uint64_t, std::string> >& vecEntry);
 
 	int GetEntityInfo(uint64_t iEntityID, EntityInfo_t &tEntityInfo, EntityMeta_t &tMeta);
 
