@@ -10,40 +10,40 @@ namespace Certain
 class clsWakeUpPipeMng : public clsSingleton<clsWakeUpPipeMng>
 {
 private:
-	typedef pair<int, int> Pipe_t;
-	vector< Pipe_t > vecPipe;
+    typedef pair<int, int> Pipe_t;
+    vector< Pipe_t > vecPipe;
 
-	clsMutex m_oMutex;
+    clsMutex m_oMutex;
 
 public:
-	clsWakeUpPipeMng() { }
+    clsWakeUpPipeMng() { }
 
-	void NewPipe(int &iInFD)
-	{
-		iInFD = 0;
-		int iOutFD = 0;
+    void NewPipe(int &iInFD)
+    {
+        iInFD = 0;
+        int iOutFD = 0;
 
-		AssertEqual(MakeNonBlockPipe(iInFD, iOutFD), 0);
+        AssertEqual(MakeNonBlockPipe(iInFD, iOutFD), 0);
 
-		Pipe_t tPipe;
-		tPipe.first = iInFD;
-		tPipe.second = iOutFD;
+        Pipe_t tPipe;
+        tPipe.first = iInFD;
+        tPipe.second = iOutFD;
 
-		printf("NewPipe iInFD %d\n", iInFD);
+        printf("NewPipe iInFD %d\n", iInFD);
 
-		clsThreadLock oLock(&m_oMutex);
-		vecPipe.push_back(tPipe);
-	}
+        clsThreadLock oLock(&m_oMutex);
+        vecPipe.push_back(tPipe);
+    }
 
-	void WakeupAll()
-	{
-		for (uint32_t i = 0; i < vecPipe.size(); ++i)
-		{
-			int iOutFD = vecPipe[i].second;
+    void WakeupAll()
+    {
+        for (uint32_t i = 0; i < vecPipe.size(); ++i)
+        {
+            int iOutFD = vecPipe[i].second;
 
-			write(iOutFD, "x", 1);
-		}
-	}
+            write(iOutFD, "x", 1);
+        }
+    }
 };
 
 } // namespace Certain

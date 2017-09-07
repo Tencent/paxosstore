@@ -10,65 +10,65 @@ namespace Certain
 class clsDBWorker : public clsThreadBase
 {
 private:
-	uint32_t m_iWorkerID;
-	clsConfigure *m_poConf;
+    uint32_t m_iWorkerID;
+    clsConfigure *m_poConf;
 
-	clsIOWorkerRouter *m_poIOWorkerRouter;
-	clsDBReqQueue *m_poDBReqQueue;
-	clsCertainWrapper *m_poCertain;
+    clsIOWorkerRouter *m_poIOWorkerRouter;
+    clsDBReqQueue *m_poDBReqQueue;
+    clsCertainWrapper *m_poCertain;
 
 #define MAX_BATCH_CNT 50 
 
-	struct DBRoutine_t
-	{
-		void * pCo;
-		void * pData;
-		bool bHasJob;
-		int iRoutineID;
-		clsDBWorker * pSelf;
-	};
+    struct DBRoutine_t
+    {
+        void * pCo;
+        void * pData;
+        bool bHasJob;
+        int iRoutineID;
+        clsDBWorker * pSelf;
+    };
 
-	clsDBBase *m_poDBEngine;
-	stack<DBRoutine_t*> * m_poCoWorkList;
+    clsDBBase *m_poDBEngine;
+    stack<DBRoutine_t*> * m_poCoWorkList;
 
-	set<uint64_t> m_tBusyEntitySet;
+    set<uint64_t> m_tBusyEntitySet;
 
-	uint32_t m_iStartRoutineID;
+    uint32_t m_iStartRoutineID;
 
-	void RunApplyTask(clsClientCmd *poCmd, uint64_t &iLoopCnt);
+    void RunApplyTask(clsClientCmd *poCmd, uint64_t &iLoopCnt);
 
 public:
-	clsDBWorker(uint32_t iWorkerID, clsConfigure *poConf,
-			clsDBBase *poDBEngine, uint32_t iStartRoutineID)
-			: m_iWorkerID(iWorkerID),
-			  m_poConf(poConf),
-			  m_poDBEngine(poDBEngine),
-			  m_iStartRoutineID(iStartRoutineID)
-	{
-		m_poIOWorkerRouter = clsIOWorkerRouter::GetInstance();
-		m_poDBReqQueue = clsAsyncQueueMng::GetInstance()->GetDBReqQueue(m_iWorkerID);
-		m_poCertain = clsCertainWrapper::GetInstance();
+    clsDBWorker(uint32_t iWorkerID, clsConfigure *poConf,
+            clsDBBase *poDBEngine, uint32_t iStartRoutineID)
+        : m_iWorkerID(iWorkerID),
+        m_poConf(poConf),
+        m_poDBEngine(poDBEngine),
+        m_iStartRoutineID(iStartRoutineID)
+    {
+        m_poIOWorkerRouter = clsIOWorkerRouter::GetInstance();
+        m_poDBReqQueue = clsAsyncQueueMng::GetInstance()->GetDBReqQueue(m_iWorkerID);
+        m_poCertain = clsCertainWrapper::GetInstance();
 
-		m_poCoWorkList = new stack<DBRoutine_t*>;
-	}
+        m_poCoWorkList = new stack<DBRoutine_t*>;
+    }
 
-	virtual ~clsDBWorker()
-	{
-	}
+    virtual ~clsDBWorker()
+    {
+    }
 
-	void Run();
+    void Run();
 
-	clsConfigure * GetConfig()
-	{
-		return m_poConf;
-	}
+    clsConfigure * GetConfig()
+    {
+        return m_poConf;
+    }
 
-	static int EnterDBReqQueue(clsClientCmd *poCmd);
+    static int EnterDBReqQueue(clsClientCmd *poCmd);
 
-	static int CoEpollTick(void * arg);
-	static int DBSingle(void * arg);
-	static void * DBRoutine(void * arg);
-	static int NotifyDBWorker(uint64_t iEntityID);
+    static int CoEpollTick(void * arg);
+    static int DBSingle(void * arg);
+    static void * DBRoutine(void * arg);
+    static int NotifyDBWorker(uint64_t iEntityID);
 };
 
 } // namespace Certain

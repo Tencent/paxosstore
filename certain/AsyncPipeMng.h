@@ -10,8 +10,8 @@ namespace Certain
 class clsAsyncPipeMng : public clsSingleton<clsAsyncPipeMng>
 {
 private:
-	int m_aaAsyncPipe[MAX_ASYNC_PIPE_NUM][2];
-	list<uint32_t> m_tIdleIdxList;
+    int m_aaAsyncPipe[MAX_ASYNC_PIPE_NUM][2];
+    list<uint32_t> m_tIdleIdxList;
 
     // group_id -> num of concurr;
     uint32_t m_aiGroupCnt[MAX_CONTROL_GROUP_NUM];
@@ -21,23 +21,23 @@ private:
 
     uint32_t m_iMaxGroupLimit;
 
-	clsMutex m_oMutex;
+    clsMutex m_oMutex;
 
 public:
-	clsAsyncPipeMng() { }
+    clsAsyncPipeMng() { }
 
-	int Init(clsConfigure *poConf);
+    int Init(clsConfigure *poConf);
 
-	void Destroy();
+    void Destroy();
 
-	int GetIdlePipeIdx(uint32_t &iIdx, uint64_t iEntityID);
+    int GetIdlePipeIdx(uint32_t &iIdx, uint64_t iEntityID);
 
-	void PutIdlePipeIdx(uint32_t iIdx);
+    void PutIdlePipeIdx(uint32_t iIdx);
 
-	// iPtr is for check only.
-	int SyncWriteByPipeIdx(uint32_t iIdx, uintptr_t iPtr);
+    // iPtr is for check only.
+    int SyncWriteByPipeIdx(uint32_t iIdx, uintptr_t iPtr);
 
-	int SyncWaitByPipeIdx(uint32_t iIdx, uintptr_t iPtr);
+    int SyncWaitByPipeIdx(uint32_t iIdx, uintptr_t iPtr);
 };
 
 } // namespace Certain

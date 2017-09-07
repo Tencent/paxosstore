@@ -6,6 +6,3 @@ libcertain.a
 simple_cli
 simple_srv
 simple_st
-third/leveldb/*
-third/libco/*
-third/protobuf/*
