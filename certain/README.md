@@ -2,7 +2,7 @@
 
 Certain is an asynchronous implementation of paxos log.
 
-# build simple_srv and simple_cli
+# build simple_svr and simple_cli
 
 	1) sh third/autogen.sh;
 
@@ -15,11 +15,11 @@ For server:
 	Use '-i' and 'e' to override LocalAcceptorID and ExtEndpoint in the configure.
 	If AcceptorNum is 3 in certain.conf, each server(process) run as:
 
-	./simple_srv -c example/example.conf -i 0 -e 127.0.0.1:38240
+	./simple_svr -c example/example.conf -i 0 -e 127.0.0.1:38240
 
-	./simple_srv -c example/example.conf -i 1 -e 127.0.0.1:38241
+	./simple_svr -c example/example.conf -i 1 -e 127.0.0.1:38241
 
-	./simple_srv -c example/example.conf -i 2 -e 127.0.0.1:38242
+	./simple_svr -c example/example.conf -i 2 -e 127.0.0.1:38242
 
 For client:
 

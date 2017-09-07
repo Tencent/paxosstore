@@ -3,7 +3,7 @@
 # to switch between compilation modes.
 
 # The simple example contains request/response packet handle,
-# only for simple_cli to call simple_srv.
+# only for simple_cli to call simple_svr.
 # You should probably have your another RPC frame and replace it.
 CERTAIN_SIMPLE_EXAMPLE = 1
 CERTAIN_DEBUG = 0
@@ -26,7 +26,7 @@ SLIBS = $(PROTOBUF_PATH)/.libs/libprotobuf.a $(COLIB_PATH)/lib/libcolib.a $(LEVE
 #-----------------------------------------------
 
 CERTAIN_TOOLS = stress_tool
-CERTAIN_EXAMPLE = simple_srv simple_cli simple_st
+CERTAIN_EXAMPLE = simple_svr simple_cli simple_st
 CERTAIN_LIBS = libcertain.a
 
 CERTAIN_PATH=./
@@ -90,7 +90,7 @@ CERTAIN_EXAMPLE_OBJS = 	$(CERTAIN_EXAMPLE_PATH)/DBImpl.o \
 						$(CERTAIN_EXAMPLE_PATH)/SimpleCmd.o \
 						$(CERTAIN_EXAMPLE_PATH)/simple/KVEngine.o
 
-simple_srv: $(CERTAIN_EXAMPLE_PATH)/Server.o $(CERTAIN_EXAMPLE_OBJS) libcertain.a
+simple_svr: $(CERTAIN_EXAMPLE_PATH)/Server.o $(CERTAIN_EXAMPLE_OBJS) libcertain.a
 	$(BUILD_EXEC)
 
 simple_cli: $(CERTAIN_EXAMPLE_PATH)/Client.o $(CERTAIN_EXAMPLE_OBJS) libcertain.a

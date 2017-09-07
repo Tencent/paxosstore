@@ -46,7 +46,7 @@ message Message {
     required uint64 index = 5;
     required uint64 proposed_num = 6;
     optional uint64 promised_num = 7;
-    optional uint64 accept ed_num = 8;
+    optional uint64 accepted_num = 8;
     optional Entry accepted_value = 9;
 }
 ```
@@ -64,7 +64,7 @@ message Message {
      - stepNotChosen:
         本地未chosen, 则根据请求类型:
         - Chosen请求, 接受消息中的accpted_value, 并将log entry标记为chosen;
-        - Prepare/Accept请求, 则根据协议修改log entry对应状态, 返回PreparePrsp/AcceptRsp;
+        - Prepare/Accept请求, 则根据协议修改log entry对应状态, 返回PrepareRsp/AcceptRsp;
         - PrepareRsp/AcceptRsp请求, 首先验证消息的有效性, 即msg.proposed_num与log.proposed_num是否对应; 而后根据消息中携带的Promised/Accepted推进paxos过程: 收到多数派Promised后状态机从Prepare阶段推进成Accept, 返回广播Accept; 收到多数派Accepted后状态机从Accept推进成Chosen, 返回广播Chosen. 
            备注: 实际实现中, 引入AliveState跟踪Prepare/Accept阶段的投票情况. 
  3. 返回new_plog, msg_rsp
