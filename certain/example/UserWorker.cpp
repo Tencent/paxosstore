@@ -1,6 +1,6 @@
 #include "UserWorker.h"
 #include "utils/Hash.h"
-
+#include "DBImpl.h"
 
 namespace Certain
 {
@@ -26,6 +26,7 @@ void clsUserWorker::DoWithUserCmd(clsClientCmd *poCmd)
     }
     poCmd->SetEntry(iMaxCommitedEntry + 1);
     vector<uint64_t> vecWBUUID;
+    clsDBImpl *poDBImpl = dynamic_cast<clsDBImpl *>(poWrapper->GetDBEngine());
 
     if (poCmd->GetSubCmdID() == clsSimpleCmd::kGet)
     {
@@ -38,7 +39,7 @@ void clsUserWorker::DoWithUserCmd(clsClientCmd *poCmd)
         }
         else
         {
-            iRet = poWrapper->GetDBEngine()->ExcuteCmd(poCmd, strWriteBatch);
+            iRet = poDBImpl->ExcuteCmd(poCmd, strWriteBatch);
             if (iRet != 0)
             {
                 CertainLogError("cmd %s ret %d", poCmd->GetTextCmd().c_str(), iRet);
@@ -50,7 +51,7 @@ void clsUserWorker::DoWithUserCmd(clsClientCmd *poCmd)
     else if (poCmd->GetSubCmdID() == clsSimpleCmd::kSet)
     {
         string strWriteBatch;
-        iRet = poWrapper->GetDBEngine()->ExcuteCmd(poCmd, strWriteBatch);
+        iRet = poDBImpl->ExcuteCmd(poCmd, strWriteBatch);
         if (iRet != 0)
         {
             CertainLogError("cmd %s ret %d", poCmd->GetTextCmd().c_str(), iRet);

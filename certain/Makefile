@@ -16,7 +16,7 @@ GXX = g++
 
 GXXFLAGS = -O0 -g2 \
 		   -DCERTAIN_DEBUG=$(CERTAIN_DEBUG) -DCERTAIN_SIMPLE_EXAMPLE=$(CERTAIN_SIMPLE_EXAMPLE) \
-		   -Wall -Werror -std=c++11 -I./ -I./include/ \
+		   -Wall -Werror -std=c++11 -I./ -I./src/ -I./include/ \
 		   -I$(PROTOBUF_PATH) -I$(COLIB_PATH) -I$(LEVELDB_PATH)/include
 
 BUILDFLAGS = -static-libgcc -static-libstdc++ -std=c++11
@@ -33,7 +33,7 @@ CERTAIN_PATH=./
 CERTAIN_TOOLS_PATH=$(CERTAIN_PATH)/tools
 CERTAIN_EXAMPLE_PATH=$(CERTAIN_PATH)/example
 
-CERTAIN_OBJS = 	Certain.pb.o \
+CERTAIN_OBJS = 	src/Certain.pb.o \
 				utils/Logger.o \
 				utils/AOF.o \
 				utils/Thread.o \
@@ -42,30 +42,30 @@ CERTAIN_OBJS = 	Certain.pb.o \
 				network/TCPSocket.o \
 				network/EpollIO.o \
 				network/IOChannel.o \
-				AsyncQueueMng.o \
-				Configure.o \
-				PerfLog.o \
-				Command.o \
-				EntryState.o \
-				EntityInfoMng.o \
-				EntryInfoMng.o \
-				IOWorker.o \
-				ConnWorker.o \
-				EntityWorker.o \
-				PLogWorker.o \
-				DBWorker.o \
-				CatchUpWorker.o \
-				AsyncPipeMng.o \
-				UUIDGroupMng.o \
-				CertainWrapper.o \
-				GetAllWorker.o
+				src/AsyncQueueMng.o \
+				src/Configure.o \
+				src/PerfLog.o \
+				src/Command.o \
+				src/EntryState.o \
+				src/EntityInfoMng.o \
+				src/EntryInfoMng.o \
+				src/IOWorker.o \
+				src/ConnWorker.o \
+				src/EntityWorker.o \
+				src/PLogWorker.o \
+				src/DBWorker.o \
+				src/CatchUpWorker.o \
+				src/AsyncPipeMng.o \
+				src/UUIDGroupMng.o \
+				src/CertainWrapper.o \
+				src/GetAllWorker.o
 
 default: $(CERTAIN_LIBS)
 example: $(CERTAIN_LIBS) $(CERTAIN_EXAMPLE)
 tools: $(CERTAIN_TOOLS)
 
-Certain.pb.cc: Certain.proto
-	$(PROTOBUF_PATH)/protoc --cpp_out=. Certain.proto
+src/Certain.pb.cc: src/Certain.proto
+	$(PROTOBUF_PATH)/protoc --cpp_out=./ src/Certain.proto
 
 %.pb.o: %.pb.cc
 	$(GXX) $(GXXFLAGS) -c $^ -o $@
@@ -102,4 +102,4 @@ simple_st: $(CERTAIN_EXAMPLE_PATH)/StressTest.o $(CERTAIN_EXAMPLE_OBJS) libcerta
 #-----------------------------------------------
 
 clean:
-	rm *.pb.* *.o tools/*.o utils/*.o network/*.o example/*.o example/*/*.o $(CERTAIN_TOOLS) $(CERTAIN_EXAMPLE) $(CERTAIN_LIBS) -rf
+	rm src/*.pb.* src/*.o tools/*.o utils/*.o network/*.o example/*.o example/*/*.o $(CERTAIN_TOOLS) $(CERTAIN_EXAMPLE) $(CERTAIN_LIBS) -rf

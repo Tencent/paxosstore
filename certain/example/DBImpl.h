@@ -30,8 +30,21 @@ public:
 	virtual int Commit(uint64_t iEntityID, uint64_t iEntry,
 			const string &strWriteBatch);
 
+    virtual int MultiCommit(vector<EntryValue_t> vecEntryValue)
+    {
+        assert(false);
+        return 0;
+    }
+
 	virtual int LoadMaxCommitedEntry(uint64_t iEntityID,
 			uint64_t &iCommitedEntry, uint32_t &iFlag);
+
+    virtual int GetAllAndSet(uint64_t iEntityID, uint32_t iAcceptorID,
+            uint64_t &iMaxCommitedEntry)
+    {
+        assert(false);
+        return 0;
+    }
 };
 
 } // namespace Certain
