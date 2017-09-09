@@ -8,49 +8,43 @@ namespace Certain
 
 struct PLogEntityMeta_t
 {
-	uint64_t iMaxPLogEntry;
+    uint64_t iMaxPLogEntry;
 };
 
 class clsPLogBase
 {
 public:
-	virtual ~clsPLogBase()
-	{
-	}
+    static void PrintUseTimeStat();
+    static void InitUseTimeStat();
 
-	virtual int PutValue(uint64_t iEntityID, uint64_t iEntry,
-			uint64_t iValueID, const string &strValue) = 0;
+    int GetRecord(uint64_t iEntityID, uint64_t iEntry,
+            EntryRecord_t &tSrcRecord);
+    int PutRecord(uint64_t iEntityID, uint64_t iEntry, uint64_t iMaxPLogEntry,
+            EntryRecord_t tRecord);
 
-	virtual int GetValue(uint64_t iEntityID, uint64_t iEntry,
-			uint64_t iValueID, string &strValue) = 0;
+public:
+    virtual ~clsPLogBase() { }
 
-	virtual int Put(uint64_t iEntityID, uint64_t iEntry,
-			const string &strRecord) = 0;
+    virtual int PutValue(uint64_t iEntityID, uint64_t iEntry,
+            uint64_t iValueID, const string &strValue) = 0;
 
-	virtual int PutWithPLogEntityMeta(uint64_t iEntityID, uint64_t iEntry,
-			const PLogEntityMeta_t &tMeta, const string &strRecord)
-	{
-		assert(false);
-		return -1;
-	}
+    virtual int GetValue(uint64_t iEntityID, uint64_t iEntry,
+            uint64_t iValueID, string &strValue) = 0;
 
-	virtual int GetPLogEntityMeta(uint64_t iEntityID, PLogEntityMeta_t &tMeta)
-	{
-		return -1;
-	}
+    virtual int Put(uint64_t iEntityID, uint64_t iEntry,
+            const string &strRecord) = 0;
 
-	virtual int Get(uint64_t iEntityID, uint64_t iEntry,
-			string &strRecord) = 0;
+    virtual int PutWithPLogEntityMeta(uint64_t iEntityID, uint64_t iEntry,
+            const PLogEntityMeta_t &tMeta, const string &strRecord) = 0;
 
-	virtual int LoadUncommitedEntrys(uint64_t iEntityID,
-			uint64_t iMaxCommitedEntry, uint64_t iMaxLoadingEntry,
-			vector< pair<uint64_t, string> > &vecRecord, bool &bHasMore) = 0;
+    virtual int GetPLogEntityMeta(uint64_t iEntityID,
+            PLogEntityMeta_t &tMeta) = 0;
 
-	int GetRecord(uint64_t iEntityID, uint64_t iEntry, EntryRecord_t &tSrcRecord);
-	int PutRecord(uint64_t iEntityID, uint64_t iEntry, uint64_t iMaxPLogEntry, EntryRecord_t tRecord);
+    virtual int Get(uint64_t iEntityID, uint64_t iEntry, string &strRecord) = 0;
 
-	static void PrintUseTimeStat();
-	static void InitUseTimeStat();
+    virtual int LoadUncommitedEntrys(uint64_t iEntityID,
+            uint64_t iMaxCommitedEntry, uint64_t iMaxLoadingEntry,
+            vector< pair<uint64_t, string> > &vecRecord, bool &bHasMore) = 0;
 };
 
 } // namespace Certian

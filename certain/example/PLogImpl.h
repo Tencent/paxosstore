@@ -78,6 +78,20 @@ public:
 	virtual int Put(uint64_t iEntityID, uint64_t iEntry,
 			const string &strRecord);
 
+    virtual int PutWithPLogEntityMeta(uint64_t iEntityID, uint64_t iEntry,
+            const PLogEntityMeta_t &tMeta, const string &strRecord)
+    {
+        assert(false);
+        return -1;
+    }
+
+    virtual int GetPLogEntityMeta(uint64_t iEntityID,
+            PLogEntityMeta_t &tMeta)
+    {
+        assert(false);
+        return -1;
+    }
+
 	virtual int Get(uint64_t iEntityID, uint64_t iEntry,
 			string &strRecord);
 

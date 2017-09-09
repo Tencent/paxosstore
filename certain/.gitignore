@@ -1,8 +1,9 @@
 *.o
+*.a
+*.so
 
 Certain.pb.cc
 Certain.pb.h
-libcertain.a
 simple_cli
 simple_srv
 simple_st
