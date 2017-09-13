@@ -10,7 +10,7 @@ namespace OSS
 
 void SetCertainOSSIDKey(uint32_t iOSSIDKey)
 {
-	s_iCertainOSSIDKey = iOSSIDKey;
+    s_iCertainOSSIDKey = iOSSIDKey;
 }
 
 }; // namespace OSS

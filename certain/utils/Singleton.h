@@ -8,20 +8,20 @@ template<typename Type>
 class clsSingleton
 {
 private:
-	// No copying allowed
-	clsSingleton(const clsSingleton &);
-	void operator = (const clsSingleton &);
+    // No copying allowed
+    clsSingleton(const clsSingleton &);
+    void operator = (const clsSingleton &);
 
 public:
-	clsSingleton() { }
-	// compatible with gperftools
-	//virtual ~clsSingleton() { }
+    clsSingleton() { }
+    // compatible with gperftools
+    //virtual ~clsSingleton() { }
 
-	static Type *GetInstance()
-	{
-		static Type oInstance;
-		return &oInstance;
-	}
+    static Type *GetInstance()
+    {
+        static Type oInstance;
+        return &oInstance;
+    }
 };
 
 } // namespace Certain

@@ -11,13 +11,14 @@ CERTAIN_DEBUG = 0
 PROTOBUF_PATH = ./third/protobuf/src
 COLIB_PATH = ./third/libco
 LEVELDB_PATH = ./third/leveldb
+GTEST_PATH = ./third/googletest/googletest
 
 GXX = g++
 
 GXXFLAGS = -O0 -g2 \
 		   -DCERTAIN_DEBUG=$(CERTAIN_DEBUG) -DCERTAIN_SIMPLE_EXAMPLE=$(CERTAIN_SIMPLE_EXAMPLE) \
 		   -Wall -Werror -std=c++11 -I./ -I./src/ -I./include/ \
-		   -I$(PROTOBUF_PATH) -I$(COLIB_PATH) -I$(LEVELDB_PATH)/include
+		   -I$(PROTOBUF_PATH) -I$(COLIB_PATH) -I$(LEVELDB_PATH)/include -I$(GTEST_PATH)/include
 
 BUILDFLAGS = -static-libgcc -static-libstdc++ -std=c++11
 DLIBS = -pthread -ldl
@@ -74,6 +75,7 @@ src/Certain.pb.cc: src/Certain.proto
 	$(GXX) $(GXXFLAGS) -c $^ -o $@
 
 BUILD_EXEC=$(GXX) $(BUILDFLAGS) $^ -o $@ $(SLIBS) $(DLIBS)
+BUILD_TEST_EXEC=$(GXX) $(BUILDFLAGS) $< -o $@ $(GTEST_PATH)/libgtest.a libcertain.a $(DLIBS)
 
 lib: $(CERTAIN_LIBS)
 
@@ -100,6 +102,19 @@ simple_st: $(CERTAIN_EXAMPLE_PATH)/StressTest.o $(CERTAIN_EXAMPLE_OBJS) libcerta
 	$(BUILD_EXEC)
 
 #-----------------------------------------------
+# For test.
+
+CERTAIN_TESTS = tests/unit/ArrayTimerTest
+
+tests: $(CERTAIN_TESTS)
+
+%Test: %Test.o libcertain.a
+	$(BUILD_TEST_EXEC)
+
+#-----------------------------------------------
 
 clean:
-	rm src/*.pb.* src/*.o tools/*.o utils/*.o network/*.o example/*.o example/*/*.o $(CERTAIN_TOOLS) $(CERTAIN_EXAMPLE) $(CERTAIN_LIBS) -rf
+	rm src/*.pb.* src/*.o tools/*.o utils/*.o network/*.o example/*.o example/*/*.o -rf; \
+    rm $(CERTAIN_PATH)/tests/unit/*.o -rf; \
+    rm $(CERTAIN_TOOLS) $(CERTAIN_EXAMPLE) $(CERTAIN_LIBS) $(CERTAIN_TESTS) -rf;
+

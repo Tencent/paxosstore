@@ -39,46 +39,46 @@ template<typename Type>
 class clsAutoDelete
 {
 private:
-	Type *m_pType;
+    Type *m_pType;
 
 public:
-	clsAutoDelete(Type *pType) : m_pType(pType) { }
-	~clsAutoDelete() { delete m_pType, m_pType = NULL; }
+    clsAutoDelete(Type *pType) : m_pType(pType) { }
+    ~clsAutoDelete() { delete m_pType, m_pType = NULL; }
 };
 
 template<typename Type>
 class clsAutoFree
 {
 private:
-	Type *m_pType;
+    Type *m_pType;
 
 public:
-	clsAutoFree(Type *pType) : m_pType(pType) { }
-	~clsAutoFree() { delete m_pType, m_pType = NULL; }
+    clsAutoFree(Type *pType) : m_pType(pType) { }
+    ~clsAutoFree() { delete m_pType, m_pType = NULL; }
 };
 
 template<typename Type>
 class clsAutoFreeObjPtr
 {
 private:
-	Type *m_pType;
-	clsObjReusedPool<Type> *m_poPool;
+    Type *m_pType;
+    clsObjReusedPool<Type> *m_poPool;
 
 public:
-	clsAutoFreeObjPtr(Type *pType, clsObjReusedPool<Type> *poPool)
-			: m_pType(pType), m_poPool(poPool) { }
+    clsAutoFreeObjPtr(Type *pType, clsObjReusedPool<Type> *poPool)
+        : m_pType(pType), m_poPool(poPool) { }
 
-	~clsAutoFreeObjPtr()
-	{
-		if (m_poPool != NULL)
-		{
-			m_poPool->FreeObjPtr(m_pType);
-		}
-		else
-		{
-			delete m_pType, m_pType = NULL;
-		}
-	}
+    ~clsAutoFreeObjPtr()
+    {
+        if (m_poPool != NULL)
+        {
+            m_poPool->FreeObjPtr(m_pType);
+        }
+        else
+        {
+            delete m_pType, m_pType = NULL;
+        }
+    }
 };
 
 } // namespace Certain

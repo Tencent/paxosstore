@@ -1,0 +1,12 @@
+[submodule "certain/third/protobuf"]
+	path = certain/third/protobuf
+	url = https://github.com/google/protobuf
+[submodule "certain/third/leveldb"]
+	path = certain/third/leveldb
+	url = https://github.com/google/leveldb
+[submodule "certain/third/libco"]
+	path = certain/third/libco
+	url = https://github.com/Tencent/libco
+[submodule "certain/googletest"]
+	path = certain/third/googletest
+	url = https://github.com/google/googletest
