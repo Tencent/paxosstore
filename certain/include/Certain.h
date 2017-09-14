@@ -58,7 +58,7 @@ private:
 
 public:
     int Init(clsCertainUserBase *poCertainUser, clsPLogBase *poPLogEngine,
-            clsDBBase *poDBEngine, int iArgc = 0, char *pArgv[] = NULL);
+            clsDBBase *poDBEngine, clsConfigure *poConf);
     void Destroy();
 
     void Run();

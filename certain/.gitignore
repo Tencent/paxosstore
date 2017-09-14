@@ -7,3 +7,5 @@ Certain.pb.h
 simple_cli
 simple_srv
 simple_st
+
+third/googletest

@@ -2293,7 +2293,7 @@ int clsEntityWorker::DoWithRecoverCmd(clsRecoverCmd *poCmd)
 
 int clsEntityWorker::DoWithIOReq(clsCmdBase *poCmd)
 {
-    if (clsCertainWrapper::GetInstance()->GetCertainUser()->IsRejectAll())
+    if (clsCertainWrapper::GetInstance()->GetConf()->GetEnableLearnOnly())
     {
         if (poCmd->GetCmdID() != kPaxosCmd)
         {

@@ -18,7 +18,6 @@ static clsUseTimeStat *s_poPLogReqQueueWait;
 
 static clsUseTimeStat *s_poCoEpollTick;
 static clsUseTimeStat *s_poGetFromIdleCoListCnt;
-static clsUseTimeStat *s_poHandleLockCallBack;
 
 } // namespace Certain
 
@@ -84,7 +83,6 @@ void clsPLogBase::InitUseTimeStat()
     s_poPLogReqQueueWait = new clsUseTimeStat("PLogReqQueueWait");
     s_poCoEpollTick = new clsUseTimeStat("CoEpollTick");
     s_poGetFromIdleCoListCnt = new clsUseTimeStat("GetFromIdleCoListCnt");
-    s_poHandleLockCallBack = new clsUseTimeStat("HandleLockCallBack");
 }
 
 void clsPLogBase::PrintUseTimeStat()
@@ -104,7 +102,6 @@ void clsPLogBase::PrintUseTimeStat()
     s_poPLogReqQueueWait->Print();
     s_poCoEpollTick->Print();
     s_poGetFromIdleCoListCnt->Print();
-    s_poHandleLockCallBack->Print();
 }
 
 int clsPLogBase::GetRecord(uint64_t iEntityID, uint64_t iEntry,
@@ -796,11 +793,9 @@ int clsPLogWorker::CoEpollTick(void * arg)
     TIMERUS_STOP(iCoEpollTickTimeUS);
     s_poCoEpollTick->Update(iCoEpollTickTimeUS);
 
-    TIMERUS_START(iHandleLockCallBackTimeUS);
-    //clsCertainUserBase * pCertainUser = clsCertainWrapper::GetInstance()->GetCertainUser();
-    //pCertainUser->HandleLockCallBack()();
-    TIMERUS_STOP(iHandleLockCallBackTimeUS);
-    s_poHandleLockCallBack->Update(iHandleLockCallBackTimeUS);
+    clsCertainUserBase * pCertainUser = clsCertainWrapper::GetInstance()->GetCertainUser();
+    pCertainUser->TickHandleCallBack();
+
     if (pPLogWorker->CheckIfExiting(0))
     {
         return -1;
@@ -844,9 +839,11 @@ void clsPLogWorker::Run()
         w->bHasJob = false;
         w->iRoutineID = iRoutineID;
         co_resume( (stCoRoutine_t *)(w->pCo) );
-        printf("PLogWorker idx %d Routine idx %d\n", m_iWorkerID,  iRoutineID);
-        CertainLogImpt("PLogWorker idx %d Routine idx %d", m_iWorkerID,  iRoutineID);
     }
+
+    printf("PLogWorker idx %d %u Routine\n", m_iWorkerID,  m_poConf->GetPLogRoutineCnt());
+    CertainLogImpt("PLogWorker idx %d %u Routine", m_iWorkerID,  m_poConf->GetPLogRoutineCnt());
+
     /*
        {
        PLogRoutine_t *w = (PLogRoutine_t*)calloc( 1,sizeof(PLogRoutine_t) );

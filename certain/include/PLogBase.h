@@ -25,22 +25,28 @@ public:
 public:
     virtual ~clsPLogBase() { }
 
+    virtual int Put(uint64_t iEntityID, uint64_t iEntry,
+            const string &strRecord)
+    {
+        return PutValue(iEntityID, iEntry, 0, strRecord);
+    }
+
+    virtual int Get(uint64_t iEntityID, uint64_t iEntry, string &strRecord)
+    {
+        return GetValue(iEntityID, iEntry, 0, strRecord);
+    }
+
     virtual int PutValue(uint64_t iEntityID, uint64_t iEntry,
             uint64_t iValueID, const string &strValue) = 0;
 
     virtual int GetValue(uint64_t iEntityID, uint64_t iEntry,
             uint64_t iValueID, string &strValue) = 0;
 
-    virtual int Put(uint64_t iEntityID, uint64_t iEntry,
-            const string &strRecord) = 0;
-
     virtual int PutWithPLogEntityMeta(uint64_t iEntityID, uint64_t iEntry,
             const PLogEntityMeta_t &tMeta, const string &strRecord) = 0;
 
     virtual int GetPLogEntityMeta(uint64_t iEntityID,
             PLogEntityMeta_t &tMeta) = 0;
-
-    virtual int Get(uint64_t iEntityID, uint64_t iEntry, string &strRecord) = 0;
 
     virtual int LoadUncommitedEntrys(uint64_t iEntityID,
             uint64_t iMaxCommitedEntry, uint64_t iMaxLoadingEntry,

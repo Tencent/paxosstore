@@ -150,7 +150,9 @@ void clsEpollIO::RunOnce(int iTimeoutMS)
 
 			if (errno != EINTR)
 			{
+                // You should probably raise "open files" limit.
 				AssertEqual(errno, 0);
+                assert(false);
 			}
 
 			continue;

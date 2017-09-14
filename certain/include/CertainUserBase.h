@@ -16,85 +16,90 @@ class clsCertainUserBase
 public:
     virtual ~clsCertainUserBase() { }
 
-    virtual void LockEntity(uint64_t iEntityID, void **ppLockInfo)
-    {
-    }
-    virtual void BatchLockEntity(map<uint64_t, uint32_t> &, void **ppLockInfo)
-    {
-    }
-    virtual void UnLockEntity(void *ppLockInfo)
-    {
-    }
-
-    virtual void LockPLogEntity(uint64_t iEntityID, void **ppLockInfo)
-    {
-        assert(false);
-    }
-
-    virtual void UnLockPLogEntity(void *ppLockInfo)
-    {
-        assert(false);
-    }
-
     virtual int GetLocalAcceptorID(uint64_t iEntityID,
             uint32_t &iLocalAcceptorID)
     {
+        // Required.
         return 0;
     }
 
     virtual int GetServerID(uint64_t iEntityID,
             uint32_t iAcceptorID, uint32_t &iServerID)
     {
+        // Required.
         return 0;
+    }
+
+    virtual void LockEntity(uint64_t iEntityID, void **ppLockInfo)
+    {
+        // Not required.
+    }
+
+    virtual void UnLockEntity(void *ppLockInfo)
+    {
+        // Not required.
+    }
+
+    virtual void LockPLogEntity(uint64_t iEntityID, void **ppLockInfo)
+    {
+        // Not required.
+        // Implement if enable plog meta key.
+    }
+
+    virtual void UnLockPLogEntity(void *ppLockInfo)
+    {
+        // Not required.
+        // Implement if enable plog meta key.
     }
 
     virtual int InitServerAddr(clsConfigure *poConf)
     {
-        // If ServerAddrs and ExtAddr have defined in certain.conf,
-        // it's no need implement this function.
+        // Not required.
+        // Implement if you have your own distribution mode,
+        // Or it will follow 'ServerAddrs' in the configure.
         return 0;
     }
 
     virtual void OnReady()
     {
-        // If you have nothing to do when Certain is ready,
-        // it's no need implement this function.
+        // Not required.
+        // Implement if you have something to do when Certain is ready.
     }
 
     virtual uint32_t GetStartRoutineID()
     {
+        // Not required.
+        // Implement if use colib based plog/db engine.
         return 0;
     }
 
-    typedef int (*CallBackType)();
-    virtual CallBackType HandleLockCallBack()
+    virtual void TickHandleCallBack()
     {
-        return NULL;
-    }
-
-    virtual bool IsRejectAll()
-    {
-        return false;
+        // Not required.
+        // Implement if use colib based plog/db engine.
     }
 
     virtual string GetConfSuffix()
     {
+        // Not required.
         return "";
     }
 
     virtual int GetControlGroupID(uint64_t iEntityID)
     {
+        // Not required.
         return -1;
     }
 
     virtual uint32_t GetControlGroupLimit()
     {
-        // conservative 50% limit
+        // Not required.
         return MAX_ASYNC_PIPE_NUM / 2;
     }
 
     virtual int UpdateServerAddr(Certain::clsConfigure *poConf)
     {
+        // Not required.
         return 0;
     }
 };

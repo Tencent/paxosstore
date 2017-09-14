@@ -6,4 +6,6 @@ cd leveldb; make -j 4; cd ..;
 
 cd libco; make -j 4 colib; cd ..;
 
+cd googletest/googletest; cmake .; make -j 4; cd ../..;
+
 cd ..;

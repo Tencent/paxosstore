@@ -233,10 +233,9 @@ public:
 private:
     string m_strFilePath;
 
+    string m_strCertainPath;
     string m_strPerfLogPath;
     string m_strLogPath;
-    string m_strPLogPath;
-    string m_strDBPath;
 
     map<string, clsValueBase *> m_tKeyMap;
 
@@ -329,15 +328,27 @@ private:
     void UpdateConf(clsConfigure *poNewConf);
 
 public:
-    clsConfigure(const char *pcPath)
+    clsConfigure(int iArgc, char *pArgv[])
     {
-        if (pcPath != NULL)
-        {
-            m_strFilePath = pcPath;
-        }
         AssertEqual(AddVariables(), 0);
+        AssertEqual(LoadFromOption(iArgc, pArgv), 0);
         AssertEqual(LoadDefaultValue(), 0);
+        LoadFromFile(m_strFilePath.c_str());
+
+        // Override configures in the file.
+        AssertEqual(LoadFromOption(iArgc, pArgv), 0);
     }
+
+   clsConfigure(const char *pcFilePath)
+   {
+       assert(pcFilePath != NULL);
+       m_strFilePath = pcFilePath;
+
+       AssertEqual(AddVariables(), 0);
+       AssertEqual(LoadDefaultValue(), 0);
+
+       LoadFromFile(m_strFilePath.c_str());
+   }
 
     int LoadFromOption(int iArgc, char *pArgv[]);
     int LoadFromFile(const char *pcFilePath = NULL);
@@ -416,22 +427,9 @@ public:
     UINT32_GET_SET(UseIndexHash);
     UINT32_GET_SET(RandomDropRatio);
 
-    const char *GetPerfLogPath()
-    {
-        return m_strPerfLogPath.c_str();
-    }
-    const char *GetLogPath()
-    {
-        return m_strLogPath.c_str();
-    }
-    const char *GetPLogPath()
-    {
-        return m_strPLogPath.c_str();
-    }
-    const char *GetDBPath()
-    {
-        return m_strDBPath.c_str();
-    }
+    TYPE_GET_SET(string, CertainPath, strCertainPath);
+    TYPE_GET_SET(string, PerfLogPath, strPerfLogPath);
+    TYPE_GET_SET(string, LogPath, strLogPath);
 
     //TYPE_GET_SET(vector<InetAddr_t>, ServerAddrs, vecServerAddr);
     const vector<InetAddr_t>& GetServerAddrs()

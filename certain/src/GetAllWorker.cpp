@@ -68,9 +68,10 @@ void clsGetAllWorker::Run()
         w->bHasJob = false;
         w->iRoutineID = iRoutineID;
         co_resume( (stCoRoutine_t *)(w->pCo) );
-        printf("GetAllWorker idx %d Routine idx %d\n", m_iWorkerID,  iRoutineID);
-        CertainLogError("GetAllWorker idx %d Routine idx %d", m_iWorkerID,  iRoutineID);
     }
+
+    printf("GetAllWorker idx %d %u Routine\n", m_iWorkerID, m_poConf->GetGetAllRoutineCnt());
+    CertainLogImpt("GetAllWorker idx %d %u Routine", m_iWorkerID, m_poConf->GetGetAllRoutineCnt());
 
     co_eventloop( ev, CoEpollTick, this);
 }
@@ -131,9 +132,8 @@ int clsGetAllWorker::CoEpollTick(void * arg)
         }
     }
 
-    //clsCertainUserBase * pCertainUser = clsCertainWrapper::GetInstance()->GetCertainUser();
-
-    //pCertainUser->HandleLockCallBack()();
+    clsCertainUserBase * pCertainUser = clsCertainWrapper::GetInstance()->GetCertainUser();
+    pCertainUser->TickHandleCallBack();
 
     if (pGetAllWorker->CheckIfExiting(0))
     {

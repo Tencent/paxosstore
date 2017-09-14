@@ -374,8 +374,8 @@ int clsDBWorker::DBSingle(void * arg)
         }
     }
 
-    //clsCertainUserBase * pCertainUser = clsCertainWrapper::GetInstance()->GetCertainUser();
-    //pCertainUser->HandleLockCallBack()();
+    clsCertainUserBase * pCertainUser = clsCertainWrapper::GetInstance()->GetCertainUser();
+    pCertainUser->TickHandleCallBack();
 
     return 0;
 }
@@ -435,9 +435,10 @@ void clsDBWorker::Run()
         w->bHasJob = false;
         w->iRoutineID = iRoutineID;
         co_resume( (stCoRoutine_t *)(w->pCo) );
-        printf("DBWorker idx %d Routine idx %d\n", m_iWorkerID,  iRoutineID);
-        CertainLogError("DBWorker idx %d Routine idx %d", m_iWorkerID,  iRoutineID);
     }
+
+    printf("DBWorker idx %d %u Routine\n", m_iWorkerID,  m_poConf->GetDBRoutineCnt());
+    CertainLogImpt("DBWorker idx %d %u Routine", m_iWorkerID,  m_poConf->GetDBRoutineCnt());
 
     co_eventloop( ev, CoEpollTick, this);
 }

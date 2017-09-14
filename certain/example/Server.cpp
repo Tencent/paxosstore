@@ -23,18 +23,18 @@ int main(int argc, char **argv)
 
 	clsCertainUserImpl oImpl;
 
-    // Help parse the PLogPath and DBPath.
-    Certain::clsConfigure oConf(NULL);
-	assert(oConf.LoadFromOption(argc, argv) == 0);
+    Certain::clsConfigure oConf(argc, argv);
+    string strLID = to_string(oConf.GetLocalServerID());
+    oConf.SetLogPath(oConf.GetCertainPath() + "/log_" + strLID);
 
     leveldb::DB* plog = NULL;
+    string plogname = oConf.GetCertainPath() + "/plog_" + strLID;
     {
         leveldb::Status s;
-        string dbname = oConf.GetPLogPath();
 
         leveldb::Options opts;
         opts.create_if_missing = true;
-        assert(leveldb::DB::Open(opts, dbname, &plog).ok());
+        assert(leveldb::DB::Open(opts, plogname, &plog).ok());
     }
 
 	clsKVEngine oKVEngineForPLog(plog);
@@ -42,9 +42,9 @@ int main(int argc, char **argv)
 	Certain::clsPLogImpl oPLogImpl(&oKVEngineForPLog);
 
     leveldb::DB* db = NULL;
+    string dbname = oConf.GetCertainPath() + "/db_" + strLID;
     {
         leveldb::Status s;
-        string dbname = oConf.GetDBPath();
 
         leveldb::Options opts;
         opts.create_if_missing = true;
@@ -60,11 +60,11 @@ int main(int argc, char **argv)
 	poWrapper = Certain::clsCertainWrapper::GetInstance();
 	assert(poWrapper != NULL);
 
-	int iRet = poWrapper->Init(&oImpl, &oPLogImpl, &oDBImpl, argc, argv);
+	int iRet = poWrapper->Init(&oImpl, &oPLogImpl, &oDBImpl, &oConf);
 	AssertEqual(iRet, 0);
 
-    Certain::clsUserWorker::Init(100);
-    for (uint32_t i = 0; i < 100; ++i)
+    Certain::clsUserWorker::Init(10);
+    for (uint32_t i = 0; i < 10; ++i)
     {
         Certain::clsUserWorker *poWorker = new Certain::clsUserWorker(i);
         poWorker->Start();

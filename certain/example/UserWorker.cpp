@@ -143,7 +143,7 @@ void clsUserWorker::Run()
 	stCoEpoll_t * ev = co_get_epoll_ct();
 
     uint32_t m_iStartRoutineID = 0;
-    for (int i = 0; i < 48; ++i)
+    for (int i = 0; i < 50; ++i)
 	{
 		UserRoutine_t *w = (UserRoutine_t*)calloc( 1,sizeof(UserRoutine_t) );
 		stCoRoutine_t *co = NULL;
@@ -156,9 +156,10 @@ void clsUserWorker::Run()
 		w->bHasJob = false;
         w->iRoutineID = iRoutineID;
 		co_resume( (stCoRoutine_t *)(w->pCo) );
-        printf("UserWorker idx %d Routine idx %d\n", m_iWorkerID,  iRoutineID);
-        CertainLogError("UserWorker idx %d Routine idx %d", m_iWorkerID,  iRoutineID);
 	}
+
+    printf("UserWorker idx %d 50 Routine\n", m_iWorkerID);
+    CertainLogImpt("UserWorker idx %d 50 Routine", m_iWorkerID);
 
 	co_eventloop( ev, CoEpollTick, this);
 }

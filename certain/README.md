@@ -4,7 +4,7 @@ Certain is an asynchronous implementation of paxos log.
 
 # build simple_srv and simple_cli
 
-	1) sh third/autogen.sh;
+	1) sh third/autobuild.sh;
 
 	2) make -j 4 example;
 

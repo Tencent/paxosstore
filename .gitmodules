@@ -13,6 +13,8 @@
 [submodule "certain/third/libco"]
 	path = certain/third/libco
 	url = https://github.com/Tencent/libco
+    ignore = dirty
 [submodule "certain/third/googletest"]
 	path = certain/third/googletest
 	url = https://github.com/google/googletest
+    ignore = dirty

@@ -63,11 +63,6 @@ int clsCertainWrapper::ExplicitGetAll(uint64_t iEntityID)
 
 int clsCertainWrapper::EntityCatchUp(uint64_t iEntityID, uint64_t &iMaxCommitedEntry)
 {
-    if (m_poCertainUser->IsRejectAll())
-    {
-        return eRetCodeRejectAll;
-    }
-
     const uint32_t iMaxCommitNum = GetConf()->GetMaxCommitNum();
 
     uint32_t iCommitCnt = 0;
@@ -238,46 +233,20 @@ clsConfigure *clsCertainWrapper::GetConf()
 
 // Abort if return error.
 int clsCertainWrapper::Init(clsCertainUserBase *poCertainUser,
-        clsPLogBase *poPLogEngine, clsDBBase *poDBEngine,
-        int iArgc, char *pArgv[])
+        clsPLogBase *poPLogEngine, clsDBBase *poDBEngine, clsConfigure *poConf)
 {
     int iRet;
 
     m_poCertainUser = poCertainUser;
     m_poPLogEngine = poPLogEngine;
     m_poDBEngine = poDBEngine;
+    m_poConf = poConf;
 
     AssertEqual(IO_BUFFER_SIZE, 2 * MAX_WRITEBATCH_SIZE + 2000);
 
-    clsConfigure::s_strConfSuffix = poCertainUser->GetConfSuffix();
-
-    m_poConf = new clsConfigure(NULL);
-
-    iRet = m_poConf->LoadFromOption(iArgc, pArgv);
-    if (iRet != 0)
-    {
-        CertainLogFatal("m_poConf->LoadFromOption ret %d", iRet);
-        return -3;
-    }
-
-    iRet = m_poConf->LoadFromFile();
-    if (iRet != 0)
-    {
-        CertainLogFatal("m_poConf->LoadFromFile ret %d", iRet);
-        return -1;
-    }
-
-    // Override the value in configure file.
-    iRet = m_poConf->LoadFromOption(iArgc, pArgv);
-    if (iRet != 0)
-    {
-        CertainLogFatal("m_poConf->LoadFromOption ret %d", iRet);
-        return -2;
-    }
-
     OSS::SetCertainOSSIDKey(m_poConf->GetOSSIDKey());
 
-    iRet = OpenLog(m_poConf->GetLogPath(), m_poConf->GetLogLevel(),
+    iRet = OpenLog(m_poConf->GetLogPath().c_str(), m_poConf->GetLogLevel(),
             m_poConf->GetUseConsole(), m_poConf->GetUseCertainLog());
     if (iRet != 0)
     {
@@ -289,7 +258,7 @@ int clsCertainWrapper::Init(clsCertainUserBase *poCertainUser,
 
     if (m_poConf->GetUsePerfLog())
     {
-        iRet = clsPerfLog::GetInstance()->Init(m_poConf->GetPerfLogPath());
+        iRet = clsPerfLog::GetInstance()->Init(m_poConf->GetPerfLogPath().c_str());
         if (iRet != 0)
         {
             CertainLogFatal("clsPerfLog::GetInstance()->Init ret %d", iRet);
@@ -552,11 +521,6 @@ int clsCertainWrapper::GetWriteBatch(uint64_t iEntityID, uint64_t iEntry,
 
 int clsCertainWrapper::SyncWaitCmd(clsClientCmd *poCmd)
 {
-    if (m_poCertainUser->IsRejectAll())
-    {
-        return eRetCodeRejectAll;
-    }
-
     uint64_t iEntityID = poCmd->GetEntityID();
     uint64_t iEntry = poCmd->GetEntry();
 
@@ -617,10 +581,10 @@ int clsCertainWrapper::RunPaxos(uint64_t iEntityID, uint64_t iEntry,
         uint16_t hSubCmdID, const vector<uint64_t> &vecWBUUID,
         const string &strWriteBatch)
 {
-    if (m_poCertainUser->IsRejectAll() || m_poConf->GetEnableLearnOnly())
+    if (m_poConf->GetEnableLearnOnly())
     {
-        CertainLogError("E(%lu, %lu) reject reject all %u learn only %u",
-                iEntityID, iEntry, m_poCertainUser->IsRejectAll(), m_poConf->GetEnableLearnOnly());
+        CertainLogError("E(%lu, %lu) reject if learn only %u",
+                iEntityID, iEntry, m_poConf->GetEnableLearnOnly());
         return eRetCodeRejectAll;
     }
 
