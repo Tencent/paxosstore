@@ -6,13 +6,19 @@ language: cpp
 compiler: g++
 
 git:
-    submodules: false
+    submodules: true
+
+install: 
+    - ${TRAVIS_BUILD_DIR}/paxoskv/dependency_tools/install_dependencies.sh 
 
 script:
 # For certain.
     - cd certain; sh build.sh; cd ..;
 # For paxoskv.
-# (TODO)
+    - cd paxoskv
+    - mkdir build
+    - cd build
+    - cmake .. && make
 
 notifications:
     email: true

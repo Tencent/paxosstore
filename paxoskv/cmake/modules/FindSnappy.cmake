@@ -13,10 +13,18 @@
 #                 set, the default paths are searched.
 
 if(NOT SNAPPY_ROOT)
-    find_path(SNAPPY_INCLUDE_DIRS snappy.h)
-    find_library(SNAPPY_LIBRARIES NAMES snappy)
+    find_path(
+      SNAPPY_INCLUDE_DIRS 
+      NAMES snappy.h
+      HINTS ${CMAKE_SOURCE_DIR}/snappy
+      PATH_SUFFIXES include)
+    find_library(
+      SNAPPY_LIBRARIES 
+      NAMES snappy
+      HINTS ${CMAKE_SOURCE_DIR}/snappy
+      PATH_SUFFIXES build)
 else()
-    find_path(SNAPPY_INCLUDE_DIRS snappy.h NO_DEFAULT_PATH PATHS ${SNAPPY_ROOT})
+  find_path(SNAPPY_INCLUDE_DIRS NAMES snappy.h NO_DEFAULT_PATH PATHS ${SNAPPY_ROOT})
     find_library(SNAPPY_LIBRARIES NAMES snappy NO_DEFAULT_PATH PATHS ${SNAPPY_ROOT})
 endif()
 

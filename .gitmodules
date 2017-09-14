@@ -1,6 +1,12 @@
 [submodule "paxoskv/googletest"]
 	path = paxoskv/googletest
 	url = https://github.com/google/googletest
+[submodule "paxoskv/leveldb"]
+	path = paxoskv/leveldb
+	url = https://github.com/google/leveldb
+[submodule "paxoskv/snappy"]
+	path = paxoskv/snappy
+	url = https://github.com/google/snappy
 [submodule "paxoskv/libco"]
 	path = paxoskv/libco
 	url = https://github.com/Tencent/libco
@@ -18,3 +24,6 @@
 	path = certain/third/googletest
 	url = https://github.com/google/googletest
     ignore = dirty
+[submodule "paxoskv/protobuf"]
+	path = paxoskv/protobuf
+	url = https://github.com/google/protobuf

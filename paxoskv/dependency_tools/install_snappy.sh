@@ -1,13 +1,8 @@
 #!/bin/sh
 
-rm -rf snappy
-mkdir snappy
-cd snappy
-wget https://github.com/google/snappy/archive/1.1.6.tar.gz -O snappy-1.1.6.tar.gz
-tar zxvf snappy-1.1.6.tar.gz
-cd snappy-1.1.6
-
-mkdir build
-cd build && cmake ../ && make -j2
-sudo make install
-sudo ldconfig
+set -ex
+base_dir=$(cd `dirname $0`;pwd)
+cd $(dirname $base_dir)/snappy
+mkdir build && cd build 
+export CXXFLAGS="-fPIC" && cmake ../ && make -j2
+sudo make install && sudo ldconfig
