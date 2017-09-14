@@ -1,0 +1,18 @@
+sudo: required
+dist: trusty
+
+language: cpp
+
+compiler: g++
+
+git:
+    submodules: false
+
+script:
+# For certain.
+    - cd certain; sh build.sh; cd ..;
+# For paxoskv.
+# (TODO)
+
+notifications:
+    email: true
