@@ -234,7 +234,7 @@ public:
 
 		m_iIntConnLimit = m_poConf->GetIntConnLimit();
 
-		m_pcIOBuffer = (char *)malloc(IO_BUFFER_SIZE);
+		m_pcIOBuffer = (char *)malloc(CERTAIN_IO_BUFFER_SIZE);
 		assert(m_pcIOBuffer != NULL);
 
 		m_vecServerAddr = m_poConf->GetServerAddrs();

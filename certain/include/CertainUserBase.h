@@ -69,14 +69,21 @@ public:
     virtual uint32_t GetStartRoutineID()
     {
         // Not required.
-        // Implement if use colib based plog/db engine.
+        // Implement if use colib based thread worker.
         return 0;
+    }
+
+    virtual void SetRoutineID(uint32_t iRoutineID)
+    {
+        // Not required.
+        // Implement if use colib based thread worker.
+        return;
     }
 
     virtual void TickHandleCallBack()
     {
         // Not required.
-        // Implement if use colib based plog/db engine.
+        // Implement if use colib based thread worker.
     }
 
     virtual string GetConfSuffix()

@@ -225,7 +225,7 @@ private:
 	uint32_t m_iValueLen;
 
 	vector<bool> m_vecSentable;
-	vector<uint64_t> m_vecLastTimeMS;
+	vector<uint64_t> m_vecLastTimeUS;
 
 public:
 	clsStressTester(uint32_t iTesterID, const InetAddr_t &tSrvAddr,
@@ -244,7 +244,7 @@ public:
 		AssertNotEqual(m_pcIOBuffer, NULL);
 
 		m_vecSentable.assign(iChannelNum, true);
-		m_vecLastTimeMS.assign(iChannelNum, (uint64_t)1 << 60);
+		m_vecLastTimeUS.assign(iChannelNum, (uint64_t)1 << 60);
 
 		m_poEpollIO = new clsEpollIO;
 	}
@@ -343,7 +343,7 @@ public:
                 }
             }
             uint64_t iUseTime = GetCurrTimeMS()
-                - poChannel->GetTimestamp();
+                - poChannel->GetTimestampUS();
 
             vector<string> vecName; vecName.push_back("all"); vecName.push_back("failed");
             static clsStatInfoHelper oStat("stress", vecName);
@@ -402,7 +402,7 @@ public:
 
 	void PutCmdToChannel(clsIOChannel *poChannel)
 	{
-		poChannel->SetTimestamp(GetCurrTimeMS());
+		poChannel->SetTimestampUS(GetCurrTimeUS());
 
 		clsCmdBase *poCmd = CreateRandomCmd();
 		AssertNotEqual(poCmd, NULL);
@@ -444,7 +444,7 @@ public:
 					m_iSentCmdNum++;
 					PutCmdToChannel(m_vecChannel[i]);
 					m_vecSentable[i] = false;
-					m_vecLastTimeMS[i] = m_vecChannel[i]->GetTimestamp();
+					m_vecLastTimeUS[i] = m_vecChannel[i]->GetTimestampUS();
 				}
 			}
 
@@ -465,13 +465,13 @@ public:
 					bRecvAll = false;
 					const ConnInfo_t &tConn = m_vecChannel[i]->GetConnInfo();
 
-					uint64_t iCurrTimeMS = GetCurrTimeMS();
-					if (iCurrTimeMS > m_vecLastTimeMS[i] + 1000)
+					uint64_t iCurrTimeUS = GetCurrTimeUS();
+					if (iCurrTimeUS > m_vecLastTimeUS[i] + 1000 * 1000)
 					{
 						CertainLogError("timeout conn %s",
 								tConn.ToString().c_str());
 
-						m_vecLastTimeMS[i] = iCurrTimeMS;
+						m_vecLastTimeUS[i] = iCurrTimeUS;
 					}
 				}
 

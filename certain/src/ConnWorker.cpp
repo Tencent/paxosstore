@@ -93,7 +93,7 @@ void clsConnInfoMng::RemoveInvalidConn()
             iConnNotToken++;
             ConnInfo_t tConnInfo = m_vecIntConnQueue[i].front();
 
-            if (CheckFD(tConnInfo.iFD))
+            if (CheckIfValid(tConnInfo.iFD))
             {
                 break;
             }
@@ -190,10 +190,10 @@ int clsConnWorker::AddListen(bool bInternal, const InetAddr_t &tLocalAddr)
     int iRet;
     int iBacklog = 8096;
 
-    int iFD = CreateSocketFD(&tLocalAddr, true);
+    int iFD = CreateSocket(&tLocalAddr);
     if (iFD < 0)
     {
-        CertainLogError("CreateSocketFD ret %d", iFD);
+        CertainLogError("CreateSocket ret %d", iFD);
         return -1;
     }
 

@@ -286,7 +286,8 @@ void *clsDBWorker::DBRoutine(void * arg)
     DBRoutine_t * pDBRoutine = (DBRoutine_t *)arg;
     //co_enable_hook_sys();
 
-    SetRoutineID(pDBRoutine->iRoutineID);
+    clsCertainUserBase * pCertainUser = clsCertainWrapper::GetInstance()->GetCertainUser();
+    pCertainUser->SetRoutineID(pDBRoutine->iRoutineID);
 
     uint64_t iPLogGetCnt = 0;
 

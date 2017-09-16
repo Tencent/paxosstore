@@ -5,8 +5,6 @@
 #include "utils/Logger.h"
 #include "utils/Assert.h"
 
-#include "utils/FooHook.h"
-
 namespace Certain
 {
 

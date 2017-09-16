@@ -79,20 +79,6 @@ int main(int argc, char **argv)
 		if (g_iStopFlag)
 		{
             exit(-1);
-			if (!poWrapper->IsStopFlag())
-			{
-				poWrapper->SetStopFlag();
-			}
-			else if (poWrapper->IsExited())
-			{
-				printf("%s is exited!\n", argv[0]);
-
-				break;
-			}
-			else
-			{
-				printf("%s is exiting...\n", argv[0]);
-			}
 		}
 	}
 

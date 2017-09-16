@@ -3,11 +3,11 @@
 
 using namespace Certain;
 
-char g_pcBuffer[IO_BUFFER_SIZE];
+char g_pcBuffer[CERTAIN_IO_BUFFER_SIZE];
 
 clsClientCmd *ReadSingleResult(int iFD)
 {
-	int iRet = read(iFD, g_pcBuffer, IO_BUFFER_SIZE);
+	int iRet = read(iFD, g_pcBuffer, CERTAIN_IO_BUFFER_SIZE);
     //printf("read ret %d\n", iRet);
 	AssertLess(0, iRet);
 	AssertNotMore(RP_HEADER_SIZE, iRet);
@@ -26,7 +26,7 @@ clsClientCmd *ReadSingleResult(int iFD)
 int SerializeToBuffer(clsClientCmd *poCmd)
 {
 	int iBytes = poCmd->SerializeToArray(g_pcBuffer + RP_HEADER_SIZE,
-			IO_BUFFER_SIZE - RP_HEADER_SIZE);
+			CERTAIN_IO_BUFFER_SIZE - RP_HEADER_SIZE);
 	if (iBytes < 0)
 	{
 		fprintf(stderr, "SerializeToArray ret %d\n", iBytes);
@@ -122,12 +122,13 @@ int main(int argc, char **argv)
 
 	InetAddr_t tSrvEndpoint(argv[1], strtoull(argv[2], 0, 10));
 
-	int iFD = CreateSocketFD(NULL);
+	int iFD = CreateSocket(NULL);
 	if (iFD < 0)
 	{
-		CertainLogError("CreateSocketFD ret %d", iFD);
+		CertainLogError("CreateSocket ret %d", iFD);
 		exit(-1);
 	}
+    assert(SetNonBlock(iFD, false) == 0);
 
 	int iRet = Connect(iFD, tSrvEndpoint);
 	if (iRet != 0)
@@ -139,7 +140,7 @@ int main(int argc, char **argv)
 	string strCmd;
 	while (cin >> strCmd)
 	{
-		//uint64_t iStart = GetCurrTimeMS();
+		//uint64_t iStart = GetCurrTimeUS();
 
 		if (strCmd == "Get")
 		{
@@ -155,9 +156,9 @@ int main(int argc, char **argv)
 			exit(-1);
 		}
 
-		//uint64_t iEnd = GetCurrTimeMS();
+		//uint64_t iEnd = GetCurrTimeUS();
 
-		//printf(" use_time %lu\n", iEnd - iStart);
+		//printf(" use_time_us %lu\n", iEnd - iStart);
 	}
 
 	return 0;

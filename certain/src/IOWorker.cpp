@@ -362,7 +362,7 @@ int clsIOWorker::HandleRead(clsFDBase *poFD)
 
     clsIOChannel *poChannel = dynamic_cast<clsIOChannel *>(poFD);
 
-    iRet = poChannel->Read(m_pcIOBuffer, IO_BUFFER_SIZE);
+    iRet = poChannel->Read(m_pcIOBuffer, CERTAIN_IO_BUFFER_SIZE);
     if (iRet > 0)
     {
         iBytes = ParseIOBuffer(poChannel, m_pcIOBuffer, iRet);
@@ -374,7 +374,7 @@ int clsIOWorker::HandleRead(clsFDBase *poFD)
         if (!poChannel->IsBroken() && poChannel->IsReadable())
         {
             poChannel->SetReadable(false);
-            AssertEqual(iRet, IO_BUFFER_SIZE);
+            AssertEqual(iRet, CERTAIN_IO_BUFFER_SIZE);
             AssertEqual(m_poEpollIO->Remove(poChannel), 0);
             AssertEqual(m_poEpollIO->Add(poChannel), 0);
 
@@ -426,10 +426,10 @@ int clsIOWorker::MakeSingleSrvConn(uint32_t iServerID)
 {
     int iRet;
 
-    int iFD = CreateSocketFD(NULL, true);
+    int iFD = CreateSocket(NULL);
     if (iFD == -1)
     {
-        CertainLogError("CreateSocketFD ret %d", iFD);
+        CertainLogError("CreateSocket ret %d", iFD);
         return -1;
     }
 

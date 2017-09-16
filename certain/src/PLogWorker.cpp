@@ -717,7 +717,8 @@ void *clsPLogWorker::PLogRoutine(void * arg)
     PLogRoutine_t * pPLogRoutine = (PLogRoutine_t *)arg;
     //co_enable_hook_sys();
 
-    SetRoutineID(pPLogRoutine->iRoutineID);
+    clsCertainUserBase * pCertainUser = clsCertainWrapper::GetInstance()->GetCertainUser();
+    pCertainUser->SetRoutineID(pPLogRoutine->iRoutineID);
 
     while(1)
     {
@@ -755,6 +756,11 @@ int clsPLogWorker::CoEpollTick(void * arg)
 {
     clsPLogWorker * pPLogWorker = (clsPLogWorker*)arg;
     stack<PLogRoutine_t *> & IdleCoList = *(pPLogWorker->m_poCoWorkList);
+
+    if (pPLogWorker->CheckIfExiting(0))
+    {
+        return -1;
+    }
 
     static __thread uint64_t iLoopCnt = 0;
 
@@ -795,12 +801,6 @@ int clsPLogWorker::CoEpollTick(void * arg)
 
     clsCertainUserBase * pCertainUser = clsCertainWrapper::GetInstance()->GetCertainUser();
     pCertainUser->TickHandleCallBack();
-
-    if (pPLogWorker->CheckIfExiting(0))
-    {
-        return -1;
-    }
-
 
     return 0;
 }

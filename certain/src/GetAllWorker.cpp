@@ -11,7 +11,8 @@ void * clsGetAllWorker::GetAllRoutine(void * arg)
     GetAllRoutine_t * pGetAllRoutine = (GetAllRoutine_t *)arg;
     co_enable_hook_sys();
 
-    SetRoutineID(pGetAllRoutine->iRoutineID);
+    clsCertainUserBase * pCertainUser = clsCertainWrapper::GetInstance()->GetCertainUser();
+    pCertainUser->SetRoutineID(pGetAllRoutine->iRoutineID);
 
     while(1)
     {
@@ -81,6 +82,11 @@ int clsGetAllWorker::CoEpollTick(void * arg)
     clsGetAllWorker * pGetAllWorker = (clsGetAllWorker*)arg;
     std::stack<GetAllRoutine_t *> & IdleCoList = *(pGetAllWorker->m_poCoWorkList);
 
+    if (pGetAllWorker->CheckIfExiting(0))
+    {
+        return -1;
+    }
+
     static __thread uint64_t iLoopCnt = 0;
 
     clsGetAllReqQueue *poGetAllReqQueue = pGetAllWorker->m_poQueueMng->GetGetAllReqQueue(pGetAllWorker->GetWorkerID());
@@ -134,11 +140,6 @@ int clsGetAllWorker::CoEpollTick(void * arg)
 
     clsCertainUserBase * pCertainUser = clsCertainWrapper::GetInstance()->GetCertainUser();
     pCertainUser->TickHandleCallBack();
-
-    if (pGetAllWorker->CheckIfExiting(0))
-    {
-        return -1;
-    }
 
     return 0;
 }

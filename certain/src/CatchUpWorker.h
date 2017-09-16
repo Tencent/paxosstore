@@ -40,8 +40,7 @@ public:
 };
 
 class clsCatchUpWorker : public clsThreadBase,
-public clsSingleton<clsCatchUpWorker>
-
+                         public clsSingleton<clsCatchUpWorker>
 {
 private:
     clsConfigure *m_poConf;
@@ -88,6 +87,7 @@ private:
             uint64_t iByteSize);
 
 public:
+    virtual ~clsCatchUpWorker() { }
     int Init(clsConfigure *poConf, clsCertainUserBase *poCertainUser);
 
     void Destroy();

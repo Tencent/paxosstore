@@ -242,7 +242,7 @@ int clsCertainWrapper::Init(clsCertainUserBase *poCertainUser,
     m_poDBEngine = poDBEngine;
     m_poConf = poConf;
 
-    AssertEqual(IO_BUFFER_SIZE, 2 * MAX_WRITEBATCH_SIZE + 2000);
+    AssertEqual(CERTAIN_IO_BUFFER_SIZE, 2 * MAX_WRITEBATCH_SIZE + 2000);
 
     OSS::SetCertainOSSIDKey(m_poConf->GetOSSIDKey());
 

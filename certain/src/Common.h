@@ -15,9 +15,8 @@
 #include "utils/FixSizePool.h"
 #include "utils/OSSReport.h"
 #include "utils/ObjReusedPool.h"
-#include "utils/FooHook.h"
 
-#include "network/TCPSocket.h"
+#include "network/SocketHelper.h"
 #include "network/IOChannel.h"
 #include "network/EpollIO.h"
 

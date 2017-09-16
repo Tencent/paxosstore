@@ -4,8 +4,6 @@
 #include "utils/Header.h"
 #include "utils/OSSReport.h"
 
-#include "utils/FooHook.h"
-
 const uint32_t kLogBufferSize = 8192;
 extern __thread char g_acCertainLogBuffer[kLogBufferSize];
 extern uint32_t g_iCertainLogLevel;

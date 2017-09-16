@@ -109,7 +109,8 @@ void * clsUserWorker::UserRoutine(void * arg)
 	UserRoutine_t * pUserRoutine = (UserRoutine_t *)arg;
 	co_enable_hook_sys();
 
-	SetRoutineID(pUserRoutine->iRoutineID);
+    clsCertainUserBase * pCertainUser = clsCertainWrapper::GetInstance()->GetCertainUser();
+	pCertainUser->SetRoutineID(pUserRoutine->iRoutineID);
 
 	while(1)
 	{

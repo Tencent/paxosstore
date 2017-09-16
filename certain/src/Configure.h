@@ -2,7 +2,7 @@
 #define CERTAIN_CONFIGURE_H_
 
 #include "utils/Assert.h"
-#include "network/TCPSocket.h"
+#include "network/SocketHelper.h"
 
 namespace Certain
 {

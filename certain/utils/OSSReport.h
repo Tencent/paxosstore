@@ -2,7 +2,12 @@
 #define CERTAIN_OSSREPORT_H_
 
 #include "utils/Header.h"
-#include "utils/FooHook.h"
+//#include "iOssAttr.h"
+
+inline void OssAttrInc(int iKey, int iID, int iCnt)
+{
+    // For report.
+}
 
 #define CERTAIN_OSS_DEFAULT_ID_KEY	29878
 

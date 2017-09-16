@@ -40,7 +40,7 @@ CERTAIN_OBJS = 	src/Certain.pb.o \
 				utils/Thread.o \
 				utils/FixSizePool.o \
 				utils/OSSReport.o \
-				network/TCPSocket.o \
+				network/SocketHelper.o \
 				network/EpollIO.o \
 				network/IOChannel.o \
 				src/AsyncQueueMng.o \
