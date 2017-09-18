@@ -21,7 +21,7 @@ GXXFLAGS = -O0 -g2 \
 		   -I$(PROTOBUF_PATH) -I$(COLIB_PATH) -I$(LEVELDB_PATH)/include -I$(GTEST_PATH)/include
 
 BUILDFLAGS = -static-libgcc -static-libstdc++ -std=c++11
-DLIBS = -pthread -ldl
+DLIBS = -pthread -ldl -lsnappy
 SLIBS = $(PROTOBUF_PATH)/.libs/libprotobuf.a $(COLIB_PATH)/lib/libcolib.a $(LEVELDB_PATH)/out-static/libleveldb.a
 
 #-----------------------------------------------

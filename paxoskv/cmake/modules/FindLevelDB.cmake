@@ -18,7 +18,7 @@ else()
 
   find_library(
     LEVELDB_LIBRARY
-    NAMES leveldb
+    NAMES libleveldb.a
     HINTS ${LEVELDB_ROOT_DIR} $ENV{LEVELDB_ROOT_DIR}
     PATH_SUFFIXES ${LIBRARY_PATH_PREFIX})
 

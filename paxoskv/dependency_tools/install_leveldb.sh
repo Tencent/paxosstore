@@ -1,14 +1,6 @@
 #!/bin/sh
 
-rm -rf leveldb
-mkdir leveldb
-cd leveldb
-wget https://github.com/google/leveldb/archive/v1.20.tar.gz -O leveldb-1.20.tar.gz
-tar zxvf leveldb-1.20.tar.gz
-cd leveldb-1.20
-
-make -j2
-sudo cp out-shared/libleveldb.so* /usr/local/lib/
-sudo cp out-static/libleveldb.a /usr/local/lib/
-sudo cp include/leveldb /usr/local/include/ -r
-sudo ldconfig
+set -ex
+base_dir=$(cd `dirname $0`;pwd)
+cd $(dirname $base_dir)/leveldb
+make -j2 && sudo cp out-shared/libleveldb.so* /usr/local/lib/ && sudo cp out-static/libleveldb.a /usr/local/lib/ && sudo cp include/leveldb /usr/local/include/ -r && sudo ldconfig
