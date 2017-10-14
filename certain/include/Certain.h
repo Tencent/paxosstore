@@ -91,6 +91,8 @@ public:
 
     int ExplicitGetAll(uint64_t iEntityID);
 
+    bool CheckIfEntryDeletable(uint64_t iEntityID, uint64_t iEntry, uint64_t iTimestampMS);
+
     clsConfigure *GetConf();
 };
 

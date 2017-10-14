@@ -21,7 +21,8 @@ message CmdHeader
 
     optional uint64 entity_id = 2;
     optional uint64 entry = 3;
-    optional bool quick_rsp = 4;
+
+    optional int32 result = 4;
 }
 
 message PaxosCmd
@@ -37,17 +38,16 @@ message PaxosCmd
     optional uint64 max_chosen_entry = 6;
 
     optional bool check_empty = 7;
-
-    optional int32 result = 8;
+    optional bool quick_rsp = 8;
 }
 
-message SimpleCmd
+message DBEntityMeta
 {
-    optional CmdHeader header = 1;
+	optional uint32 flag = 1;
+	optional uint64 max_commited_entry = 2;
+};
 
-    optional uint32 sub_cmd_id = 2;
-    optional bytes key = 3;
-    optional bytes value = 4;
-
-    optional int32 result = 5;
-}
+message PLogEntityMeta
+{
+	optional uint64 max_plog_entry = 1;
+};

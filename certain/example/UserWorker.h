@@ -1,18 +1,26 @@
-#ifndef CERTAIN_USERWORKER_H_
-#define CERTAIN_USERWORKER_H_
-
+#pragma once
 #include "Certain.h"
 #include "IOWorker.h"
-#include "SimpleCmd.h"
 #include "co_routine.h"
 
-namespace Certain
-{
-
-class clsUserWorker : public clsThreadBase
+class clsCallDataBase
 {
 public:
-    typedef clsCircleQueue<clsClientCmd *> clsUserQueue;
+    virtual bool ForUserProceed() = 0;
+    virtual void Finish(bool bCancelled) = 0;
+    virtual void Proceed() = 0;
+    virtual ~clsCallDataBase() { }
+};
+
+class clsBatchHelper
+{
+    public:
+};
+
+class clsUserWorker : public Certain::clsThreadBase
+{
+public:
+    typedef Certain::clsCircleQueue<clsCallDataBase *> clsUserQueue;
 
     static uint32_t m_iWorkerNum;
     static clsUserQueue **m_ppUserQueue;
@@ -27,11 +35,12 @@ public:
         }
     }
 
-	static int PushUserCmd(clsClientCmd *poCmd)
+    static int PushCallData(clsCallDataBase *poCallData)
     {
-        uint32_t iWorkerID = Hash(poCmd->GetEntityID()) % m_iWorkerNum;
+        static volatile uint64_t s_iHint = 0;
+        uint32_t iWorkerID = Certain::Hash(s_iHint++) % m_iWorkerNum;
 
-        int iRet = m_ppUserQueue[iWorkerID]->PushByMultiThread(poCmd);
+        int iRet = m_ppUserQueue[iWorkerID]->PushByMultiThread(poCallData);
         if (iRet != 0)
         {
             CertainLogError("PushByMultiThread ret %d", iRet);
@@ -45,19 +54,19 @@ private:
     uint32_t m_iWorkerID;
     clsUserQueue *m_poUserQueue;
 
-	struct UserRoutine_t
-	{
-		void * pCo;
-		void * pData;
-		bool bHasJob;
-		int iRoutineID;
-		clsUserWorker * pSelf;
-	};
+    struct UserRoutine_t
+    {
+        void * pCo;
+        void * pData;
+        bool bHasJob;
+        int iRoutineID;
+        clsUserWorker * pSelf;
+    };
 
-	std::stack<UserRoutine_t*> * m_poCoWorkList;
+    std::stack<UserRoutine_t*> * m_poCoWorkList;
 
     // For simple, not to excute all the pre cmd.
-    clsLRUTable<uint64_t, vector<clsClientCmd*>* > *m_poBatchTable;
+    Certain::clsLRUTable<uint64_t, vector<clsCallDataBase*>* > *m_poBatchTable;
 
 public:
 
@@ -68,41 +77,13 @@ public:
 
         m_poCoWorkList = new std::stack<UserRoutine_t*>;
 
-        m_poBatchTable = new clsLRUTable<uint64_t, vector<clsClientCmd*>* >;
+        m_poBatchTable = new Certain::clsLRUTable<uint64_t, vector<clsCallDataBase*>* >;
     }
 
-    void AddCmdBatch(clsClientCmd *poCmd)
-    {
-        uint64_t iEntityID = poCmd->GetEntityID();
-        vector<clsClientCmd*>* pvec = NULL;
+    void Run();
 
-        if (!m_poBatchTable->Find(iEntityID, pvec))
-        {
-            pvec = new vector<clsClientCmd*>;
-        }
+    static int CoEpollTick(void * arg);
+    static void * UserRoutine(void * arg);
 
-        pvec->push_back(poCmd);
-    }
-
-    void TakeCmdBatch(uint64_t &iEntityID, vector<clsClientCmd*>* &pvec)
-    {
-        iEntityID = 0;
-        pvec = NULL;
-
-        if (m_poBatchTable->PeekOldest(iEntityID, pvec))
-        {
-            assert(m_poBatchTable->Remove(iEntityID));
-        }
-    }
-
-	void Run();
-
-	static int CoEpollTick(void * arg);
-	static void * UserRoutine(void * arg);
-
-    void DoWithUserCmd(clsClientCmd *poCmd);
+    void DoWithUserCmd(clsCallDataBase *poCallData);
 };
-
-}; // namespace Certain
-
-#endif // CERTAIN_USERWORKER_H_

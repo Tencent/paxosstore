@@ -22,12 +22,6 @@ inline uint64_t GetCurrTimeMS()
     return (uint64_t)tv.tv_sec * 1000 + tv.tv_usec / 1000;
 }
 
-#define TIMERUS_START(x) uint64_t x = Certain::GetCurrTimeUS()
-#define TIMERUS_STOP(x) x = Certain::GetCurrTimeUS() - x
-
-#define TIMERMS_START(x) uint64_t x = Certain::GetCurrTimeMS()
-#define TIMERMS_STOP(x) x = Certain::GetCurrTimeMS() - x
-
 inline uint32_t GetCurrTime()
 {
     struct timeval tv;

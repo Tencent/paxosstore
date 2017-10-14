@@ -56,96 +56,96 @@ public:
 
 class clsMutex
 {
-    public:
-        clsMutex() { tMutex = PTHREAD_MUTEX_INITIALIZER; }
-        ~clsMutex() { }
+public:
+    clsMutex() { tMutex = PTHREAD_MUTEX_INITIALIZER; }
+    ~clsMutex() { }
 
-        void Lock()
-        {
-            AssertEqual(pthread_mutex_lock(&tMutex), 0);
-        }
+    void Lock()
+    {
+        AssertEqual(pthread_mutex_lock(&tMutex), 0);
+    }
 
-        void Unlock()
-        {
-            AssertEqual(pthread_mutex_unlock(&tMutex), 0);
-        }
+    void Unlock()
+    {
+        AssertEqual(pthread_mutex_unlock(&tMutex), 0);
+    }
 
-    private:
-        pthread_mutex_t tMutex;
+private:
+    pthread_mutex_t tMutex;
 
-        NO_COPYING_ALLOWED(clsMutex);
+    NO_COPYING_ALLOWED(clsMutex);
 };
 
 class clsThreadLock
 {
-    public:
-        explicit clsThreadLock(clsMutex *poMutex) : m_poMutex(poMutex)
+public:
+    explicit clsThreadLock(clsMutex *poMutex) : m_poMutex(poMutex)
     {
         m_poMutex->Lock();
     }
-        ~clsThreadLock() { m_poMutex->Unlock(); }
+    ~clsThreadLock() { m_poMutex->Unlock(); }
 
-    private:
-        clsMutex *const m_poMutex;
+private:
+    clsMutex *const m_poMutex;
 
-        NO_COPYING_ALLOWED(clsThreadLock);
+    NO_COPYING_ALLOWED(clsThreadLock);
 };
 
 class clsRWLock
 {
-    public:
-        clsRWLock() { m_tRWLock = PTHREAD_RWLOCK_INITIALIZER; }
-        ~clsRWLock() { }
+public:
+    clsRWLock() { m_tRWLock = PTHREAD_RWLOCK_INITIALIZER; }
+    ~clsRWLock() { }
 
-        void ReadLock()
-        {
-            AssertEqual(pthread_rwlock_rdlock(&m_tRWLock), 0);
-        }
+    void ReadLock()
+    {
+        AssertEqual(pthread_rwlock_rdlock(&m_tRWLock), 0);
+    }
 
-        void WriteLock()
-        {
-            AssertEqual(pthread_rwlock_wrlock(&m_tRWLock), 0);
-        }
+    void WriteLock()
+    {
+        AssertEqual(pthread_rwlock_wrlock(&m_tRWLock), 0);
+    }
 
-        void Unlock()
-        {
-            AssertEqual(pthread_rwlock_unlock(&m_tRWLock), 0);
-        }
+    void Unlock()
+    {
+        AssertEqual(pthread_rwlock_unlock(&m_tRWLock), 0);
+    }
 
-    private:
-        pthread_rwlock_t m_tRWLock;
+private:
+    pthread_rwlock_t m_tRWLock;
 
-        NO_COPYING_ALLOWED(clsRWLock);
+    NO_COPYING_ALLOWED(clsRWLock);
 };
 
 class clsThreadReadLock
 {
-    public:
-        explicit clsThreadReadLock(clsRWLock *poRWLock) : m_poRWLock(poRWLock)
+public:
+    explicit clsThreadReadLock(clsRWLock *poRWLock) : m_poRWLock(poRWLock)
     {
         m_poRWLock->ReadLock();
     }
-        ~clsThreadReadLock() { m_poRWLock->Unlock(); }
+    ~clsThreadReadLock() { m_poRWLock->Unlock(); }
 
-    private:
-        clsRWLock *const m_poRWLock;
+private:
+    clsRWLock *const m_poRWLock;
 
-        NO_COPYING_ALLOWED(clsThreadReadLock);
+    NO_COPYING_ALLOWED(clsThreadReadLock);
 };
 
 class clsThreadWriteLock
 {
-    public:
-        explicit clsThreadWriteLock(clsRWLock *poRWLock) : m_poRWLock(poRWLock)
+public:
+    explicit clsThreadWriteLock(clsRWLock *poRWLock) : m_poRWLock(poRWLock)
     {
         m_poRWLock->WriteLock();
     }
-        ~clsThreadWriteLock() { m_poRWLock->Unlock(); }
+    ~clsThreadWriteLock() { m_poRWLock->Unlock(); }
 
-    private:
-        clsRWLock *const m_poRWLock;
+private:
+    clsRWLock *const m_poRWLock;
 
-        NO_COPYING_ALLOWED(clsThreadWriteLock);
+    NO_COPYING_ALLOWED(clsThreadWriteLock);
 };
 
 inline void BindThreadAffinity(uint32_t iCoreID)
@@ -169,16 +169,6 @@ inline void SetThreadTitle(const char* fmt, ...)
     va_end(ap);
 
     AssertSyscall(prctl(PR_SET_NAME, pcTitle));
-}
-
-inline int GetCpuCount()
-{
-    return sysconf(_SC_NPROCESSORS_ONLN) ;  
-}
-
-inline void SetCpu(int begin,int end)
-{
-    //
 }
 
 } // namespace Certain

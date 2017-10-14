@@ -592,4 +592,34 @@ bool clsEntryStateMachine::IsRemoteCompeting()
     return false;
 }
 
+uint32_t clsEntryStateMachine::CalcSize()
+{
+    uint32_t iSize = sizeof(clsEntryStateMachine);
+
+    for (uint32_t i = 0; i < s_iAcceptorNum; ++i)
+    {
+        if (m_atRecord[i].tValue.strValue.size() == 0)
+        {
+            continue;
+        }
+
+        bool bToAdd = true;
+        for (uint32_t j = 0; j < i; ++j)
+        {
+            if (m_atRecord[i].tValue.iValueID == m_atRecord[j].tValue.iValueID)
+            {
+                bToAdd = false;
+                break;
+            }
+        }
+
+        if (bToAdd)
+        {
+            iSize += m_atRecord[i].tValue.strValue.size();
+        }
+    }
+
+    return iSize;
+}
+
 } // namespace Certain

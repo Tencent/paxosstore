@@ -145,16 +145,16 @@ void clsDBWorker::RunApplyTask(clsClientCmd *poCmd, uint64_t &iPLogGetCnt)
 
         uint32_t iFlag = 0;
         iMaxCommitedEntry = 0;
-        iRet = m_poDBEngine->LoadMaxCommitedEntry(iEntityID, iMaxCommitedEntry, iFlag);
+        iRet = m_poDBEngine->GetEntityMeta(iEntityID, iMaxCommitedEntry, iFlag);
         if ((iRet != 0 && iRet != eRetCodeNotFound) || iFlag != 0)
         {
             if (iFlag == 0)
             {
-                CertainLogFatal("LoadMaxCommitedEntry ret %d EntityID %lu", iRet, iEntityID);
+                CertainLogFatal("GetEntityMeta ret %d EntityID %lu", iRet, iEntityID);
             }
             else
             {
-                CertainLogError("LoadMaxCommitedEntry ret %d EntityID %lu", iRet, iEntityID);
+                CertainLogError("GetEntityMeta ret %d EntityID %lu", iRet, iEntityID);
             }
             return;
         }
@@ -189,7 +189,8 @@ void clsDBWorker::RunApplyTask(clsClientCmd *poCmd, uint64_t &iPLogGetCnt)
             CertainLogError("E(%lu, %lu) iMaxMultiCmdSize %u iMaxCommitedEntry %lu",
                     iEntityID, poCmd->GetEntry(), iMaxMultiCmdSize, iMaxCommitedEntry);
 
-            iRet = clsCertainWrapper::GetInstance()->GetDBEngine()->MultiCommit(iEntityID, iMaxCommitedEntry, iMaxTaskEntry);
+            iRet = clsCertainWrapper::GetInstance()->GetDBEngine()->MultiCommit(
+                    iEntityID, iMaxCommitedEntry, iMaxTaskEntry);
             if (iRet == eRetCodeStorageCorrupt)
             {
                 bNeedEvictEntity = true;
@@ -338,13 +339,11 @@ int clsDBWorker::DBSingle(void * arg)
     clsDBWorker * pDBWorker = (clsDBWorker*)arg;
     stack<DBRoutine_t *> & IdleCoList = *(pDBWorker->m_poCoWorkList);
 
-    static __thread uint64_t iLoopCnt = 0;
-
-    while( !IdleCoList.empty() )
+    while (!IdleCoList.empty())
     {
         clsClientCmd *poCmd = NULL;
         int iRet = pDBWorker->m_poDBReqQueue->TakeByOneThread(&poCmd);
-        if(iRet == 0 && poCmd)
+        if (iRet == 0 && poCmd)
         {
             if (pDBWorker->m_tBusyEntitySet.find(poCmd->GetEntityID())
                     != pDBWorker->m_tBusyEntitySet.end())
@@ -353,12 +352,6 @@ int clsDBWorker::DBSingle(void * arg)
                 CertainLogInfo("drop cmd: %s", poCmd->GetTextCmd().c_str());
                 delete poCmd, poCmd = NULL;
                 continue;
-            }
-
-            if( ( (++iLoopCnt) % 10000) == 0)
-            {
-                CertainLogError("DBWorkerID %u DBQueue size %u",
-                        pDBWorker->m_iWorkerID, pDBWorker->m_poDBReqQueue->Size());
             }
 
             pDBWorker->m_tBusyEntitySet.insert(poCmd->GetEntityID());
@@ -405,17 +398,7 @@ int clsDBWorker::NotifyDBWorker(uint64_t iEntityID)
 
 void clsDBWorker::Run()
 {
-    int cpu_cnt = GetCpuCount();
-
-    if (cpu_cnt == 48)
-    {
-        SetCpu(8, cpu_cnt);
-    }
-    else
-    {
-        SetCpu(4, cpu_cnt);
-    }
-
+    // Bind cpu affinity here.
     uint32_t iLocalServerID = m_poConf->GetLocalServerID();
     SetThreadTitle("db_%u_%u", iLocalServerID, m_iWorkerID);
     CertainLogInfo("db_%u_%u run", iLocalServerID, m_iWorkerID);

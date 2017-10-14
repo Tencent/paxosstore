@@ -38,17 +38,7 @@ void * clsGetAllWorker::GetAllRoutine(void * arg)
 
 void clsGetAllWorker::Run()
 {
-    int cpu_cnt = GetCpuCount();
-
-    if (cpu_cnt == 48)
-    {
-        SetCpu(8, cpu_cnt);
-    }
-    else
-    {
-        SetCpu(4, cpu_cnt);
-    }
-
+    // Bind cpu affinity here.
     uint32_t iLocalServerID = m_poConf->GetLocalServerID();
     SetThreadTitle("getall_%u_%u", iLocalServerID, m_iWorkerID);
     CertainLogInfo("getall_%u_%u run", iLocalServerID, m_iWorkerID);
@@ -89,15 +79,16 @@ int clsGetAllWorker::CoEpollTick(void * arg)
 
     static __thread uint64_t iLoopCnt = 0;
 
-    clsGetAllReqQueue *poGetAllReqQueue = pGetAllWorker->m_poQueueMng->GetGetAllReqQueue(pGetAllWorker->GetWorkerID());
+    clsGetAllReqQueue *poGetAllReqQueue = pGetAllWorker->m_poQueueMng->GetGetAllReqQueue(
+            pGetAllWorker->GetWorkerID());
 
     static __thread uint64_t iLastSleepTimeMS = 0;
 
-    while( !IdleCoList.empty() )
+    while (!IdleCoList.empty())
     {
         clsPaxosCmd *poCmd = NULL;
         int iRet = poGetAllReqQueue->TakeByOneThread(&poCmd);
-        if(iRet == 0 && poCmd)
+        if (iRet == 0 && poCmd)
         {
             if( ( (++iLoopCnt) % 10 ) == 0)
             {
@@ -150,8 +141,8 @@ int clsGetAllWorker::HandleInQueue(clsPaxosCmd * poCmd)
     OSS::ReportGetAllReq();
 
     clsDBBase * pDataDB = clsCertainWrapper::GetInstance()->GetDBEngine();
-    uint64_t iCommitPos = 0;
-    int iRet = pDataDB->GetAllAndSet(poCmd->GetEntityID(), poCmd->GetSrcAcceptorID(), iCommitPos);
+    uint64_t iCommitedEntry = 0;
+    int iRet = pDataDB->GetAllAndSet(poCmd->GetEntityID(), poCmd->GetSrcAcceptorID(), iCommitedEntry);
     if(iRet != 0)
     {
         CertainLogError("EntityID %lu GetAllAndSet iRet %d", poCmd->GetEntityID(), iRet);
@@ -160,19 +151,18 @@ int clsGetAllWorker::HandleInQueue(clsPaxosCmd * poCmd)
 
     poCmd->SetResult(iRet);
 
-    poCmd->SetEntry(iCommitPos);
+    poCmd->SetEntry(iCommitedEntry);
     uint64_t iEntityID = poCmd->GetEntityID();
     uint32_t iSrcAcceptorID = poCmd->GetSrcAcceptorID();
 
-    int iLoop = 0;
     while(1)
     {
         iRet= clsEntityWorker::EnterGetAllRspQueue(poCmd);
         if(iRet != 0)
         {
-            CertainLogError("EntityID %lu EnterGetAllRspQueue iRet %d iLoop %d", poCmd->GetEntityID(), iRet, iLoop);
-            poll(NULL, 0, 10);   
-            iLoop++;
+            CertainLogError("EntityID %lu EnterGetAllRspQueue iRet %d",
+                    poCmd->GetEntityID(), iRet);
+            poll(NULL, 0, 10);
         }
         else
         {
@@ -180,8 +170,8 @@ int clsGetAllWorker::HandleInQueue(clsPaxosCmd * poCmd)
         }
     }
 
-    CertainLogError("EntityID %lu srcAcceptorid %u CommitPos %lu iRet %d",
-            iEntityID, iSrcAcceptorID, iCommitPos, iRet);
+    CertainLogImpt("EntityID %lu srcAcceptorid %u iCommitedEntry %lu iRet %d",
+            iEntityID, iSrcAcceptorID, iCommitedEntry, iRet);
 
     return 0;
 }

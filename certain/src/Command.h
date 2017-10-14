@@ -13,7 +13,6 @@ enum enumCmd
     kPaxosCmd = 1,
     kRecoverCmd,
     kWriteBatchCmd,
-    kSimpleCmd, // For commands in the example directory.
 };
 
 enum enumPLogType
@@ -61,6 +60,7 @@ enum enumRetCode
     eRetCodeEntityEvicted	= -7026,
     eRetCodeMemCacheLimited	= -7027,
     eRetCodeNoGroupIdlePipe	= -7028,
+    eRetCodeRemoteNewer     = -7029,
 
     eRetCodeDBExcuteErr		= -7100,
     eRetCodeDBCommitErr		= -7101,
@@ -70,6 +70,8 @@ enum enumRetCode
     eRetCodeDBLoadErr		= -7105,
     eRetCodeDBPending		= -7106,
     eRetCodeDBStatusErr		= -7107,
+    eRetCodeDBGetErr		= -7108,
+    eRetCodeDBPutErr		= -7109,
 
     eRetCodePLogGetErr		= -7200,
     eRetCodePLogPutErr		= -7201,
@@ -78,9 +80,24 @@ enum enumRetCode
     eRetCodePLogReject		= -7204,
     eRetCodeGetAllPending   = -7205,
 
-    eRetCodeRemoteOut       = -7300,
-    eRetCodeRandomDrop      = -7301,
+    eRetCodeSetFlagErr              = -7400,
+    eRetCodeClearDBErr              = -7401,
+    eRetCodeGetLocalMachineIDErr    = -7402,
+    eRetCodeGetPeerSvrAddrErr       = -7403,
+    eRetCodeGetDBEntityMetaErr      = -7404,
+    eRetCodeSetDBEntityMetaErr      = -7405,
+    eRetCodeGetDataFromPeerErr      = -7406,
+    eRetCodeCommitLocalDBErr        = -7407,
+    eRetCodeReClearDBErr            = -7408,
+    eRetCodeClearFlagErr            = -7409,
+    eRetCodeGetBatchErr             = -7410,
+    eRetCodeGetPeerCommitedEntryErr = -7411,
+    oRetCodeLocalNotRejectAll       = -7412,
+    eRetCodeSnapshotNotFoundErr     = -7413,
 
+    eRetCodeParseProtoErr   = -7500,
+
+    eRetCodeRandomDrop      = -7998,
     eRetCodeUnkown 			= -7999,
 };
 
@@ -116,14 +133,12 @@ protected:
 
     int m_iResult;
 
-    bool m_bQuickRsp;
-
     void SetFromHeader(const CertainPB::CmdHeader *poHeader)
     {
         m_iUUID = poHeader->uuid();
         m_iEntityID = poHeader->entity_id();
         m_iEntry = poHeader->entry();
-        m_bQuickRsp = poHeader->quick_rsp();
+        m_iResult = poHeader->result();
     }
 
     void SetToHeader(CertainPB::CmdHeader *poHeader)
@@ -131,7 +146,7 @@ protected:
         poHeader->set_uuid(m_iUUID);
         poHeader->set_entity_id(m_iEntityID);
         poHeader->set_entry(m_iEntry);
-        poHeader->set_quick_rsp(m_bQuickRsp);
+        poHeader->set_result(m_iResult);
     }
 
 public:
@@ -154,8 +169,6 @@ public:
         m_iRspPkgCRC32 = 0;
 
         m_iResult = 0;
-
-        m_bQuickRsp = false;
     }
 
     virtual ~clsCmdBase() { }
@@ -164,10 +177,6 @@ public:
 
     uint64_t GetUUID() { return m_iUUID; }
     void SetUUID(uint64_t iUUID) { m_iUUID = iUUID; }
-
-    bool GetQuickRsp() { return m_bQuickRsp; }
-    void SetQuickRsp( bool bQuickRsp ) { m_bQuickRsp = bQuickRsp; }
-
 
     TYPE_GET_SET(uint64_t, EntityID, iEntityID);
     TYPE_GET_SET(uint64_t, Entry, iEntry);
@@ -193,6 +202,7 @@ class clsPaxosCmd : public clsCmdBase
 {
 private:
     bool m_bCheckEmpty;
+    bool m_bQuickRsp;
     bool m_bPLogError;
     bool m_bPLogReturn;
     bool m_bPLogLoad;
@@ -246,7 +256,8 @@ public:
 
     uint32_t CalcSize()
     {
-        return sizeof(clsPaxosCmd) + m_tSrcRecord.tValue.strValue.size() + m_tDestRecord.tValue.strValue.size();
+        return sizeof(clsPaxosCmd) + m_tSrcRecord.tValue.strValue.size()
+            + m_tDestRecord.tValue.strValue.size();
     }
 
     BOOLEN_IS_SET(PLogError);
@@ -254,6 +265,7 @@ public:
     BOOLEN_IS_SET(PLogLoad);
     BOOLEN_IS_SET(CheckHasMore);
     BOOLEN_IS_SET(HasMore);
+    BOOLEN_IS_SET(QuickRsp);
 
     UINT32_GET_SET(SrcAcceptorID);
     UINT32_GET_SET(DestAcceptorID);

@@ -284,16 +284,13 @@ private:
     uint32_t m_iEnableAutoFixEntry;
     uint32_t m_iGetAllMaxNum;
     uint32_t m_iEnableMaxPLogEntry;
-    uint32_t m_iEnableGetAllOnly;
     uint32_t m_iPLogRoutineCnt;
     uint32_t m_iIOReqTimeoutMS;
-    uint32_t m_iDBBatchCnt;
     uint32_t m_iPLogWriteQueueSize;
     uint32_t m_iPLogWriteWorkerNum;
     uint32_t m_iPLogWriteTimeoutUS;
     uint32_t m_iPLogWriteMaxNum;
     uint32_t m_iUsePLogWriteWorker;
-    uint32_t m_iUseDBBatch;
     uint32_t m_iWakeUpTimeoutUS;
     uint32_t m_iEnableTimeStat;
     uint32_t m_iMaxEmbedValueSize;
@@ -304,11 +301,10 @@ private:
     uint32_t m_iMaxCatchUpCnt;
     uint32_t m_iMaxMemCacheSizeMB;
     uint32_t m_iEnableConnectAll; // For compatable
-    uint32_t m_iUseIndexHash;
     uint32_t m_iRandomDropRatio;
+    uint32_t m_iPLogExpireTimeMS;
 
     vector<InetAddr_t> m_vecServerAddr;
-    InetAddr_t m_tExtAddr;
 
     int ParseByLine(string strLine, string &strKey, string &strValue);
     int SetByStringValue(clsValueBase *poValue, string strValue);
@@ -339,16 +335,16 @@ public:
         AssertEqual(LoadFromOption(iArgc, pArgv), 0);
     }
 
-   clsConfigure(const char *pcFilePath)
-   {
-       assert(pcFilePath != NULL);
-       m_strFilePath = pcFilePath;
+    clsConfigure(const char *pcFilePath)
+    {
+        assert(pcFilePath != NULL);
+        m_strFilePath = pcFilePath;
 
-       AssertEqual(AddVariables(), 0);
-       AssertEqual(LoadDefaultValue(), 0);
+        AssertEqual(AddVariables(), 0);
+        AssertEqual(LoadDefaultValue(), 0);
 
-       LoadFromFile(m_strFilePath.c_str());
-   }
+        LoadFromFile(m_strFilePath.c_str());
+    }
 
     int LoadFromOption(int iArgc, char *pArgv[]);
     int LoadFromFile(const char *pcFilePath = NULL);
@@ -404,16 +400,13 @@ public:
     UINT32_GET_SET(EnableAutoFixEntry);
     UINT32_GET_SET(GetAllMaxNum);
     UINT32_GET_SET(EnableMaxPLogEntry);
-    UINT32_GET_SET(EnableGetAllOnly);
     UINT32_GET_SET(PLogRoutineCnt);
     UINT32_GET_SET(IOReqTimeoutMS);
-    UINT32_GET_SET(DBBatchCnt);
     UINT32_GET_SET(PLogWriteWorkerNum);
     UINT32_GET_SET(PLogWriteQueueSize);
     UINT32_GET_SET(PLogWriteTimeoutUS);
     UINT32_GET_SET(PLogWriteMaxNum);
     UINT32_GET_SET(UsePLogWriteWorker);
-    UINT32_GET_SET(UseDBBatch);
     UINT32_GET_SET(WakeUpTimeoutUS);
     UINT32_GET_SET(EnableTimeStat);
     UINT32_GET_SET(MaxEmbedValueSize);
@@ -424,8 +417,8 @@ public:
     UINT32_GET_SET(MaxCatchUpCnt);
     UINT32_GET_SET(MaxMemCacheSizeMB);
     UINT32_GET_SET(EnableConnectAll);
-    UINT32_GET_SET(UseIndexHash);
     UINT32_GET_SET(RandomDropRatio);
+    UINT32_GET_SET(PLogExpireTimeMS);
 
     TYPE_GET_SET(string, CertainPath, strCertainPath);
     TYPE_GET_SET(string, PerfLogPath, strPerfLogPath);
@@ -452,12 +445,9 @@ public:
                 continue;
             }
 
-            printf("%s replace %s\n", vecServerAddr[i].ToString().c_str(), m_vecServerAddr[i].ToString().c_str());
             m_vecServerAddr[i] = vecServerAddr[i];
         }
     }
-
-    TYPE_GET_SET(InetAddr_t, ExtAddr, tExtAddr);
 
     void LoadAgain();
 };

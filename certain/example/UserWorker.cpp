@@ -1,96 +1,23 @@
 #include "UserWorker.h"
-#include "utils/Hash.h"
-#include "DBImpl.h"
-
-namespace Certain
-{
 
 uint32_t clsUserWorker::m_iWorkerNum = 0;
 clsUserWorker::clsUserQueue **clsUserWorker::m_ppUserQueue = NULL;
 
-void clsUserWorker::DoWithUserCmd(clsClientCmd *poCmd)
-{
-    int iRet;
-    clsCertainWrapper *poWrapper = clsCertainWrapper::GetInstance();
-
-    CertainLogInfo("cmd %s", poCmd->GetTextCmd().c_str());
-
-    uint64_t iMaxCommitedEntry = 0;
-    iRet = poWrapper->EntityCatchUp(poCmd->GetEntityID(), iMaxCommitedEntry);
-    if (iRet != 0)
-    {
-        CertainLogError("cmd %s ret %d", poCmd->GetTextCmd().c_str(), iRet);
-        poCmd->SetResult(iRet);
-        assert(clsIOWorkerRouter::GetInstance()->Go(poCmd) == 0);
-        return ;
-    }
-    poCmd->SetEntry(iMaxCommitedEntry + 1);
-    vector<uint64_t> vecWBUUID;
-    clsDBImpl *poDBImpl = dynamic_cast<clsDBImpl *>(poWrapper->GetDBEngine());
-
-    if (poCmd->GetSubCmdID() == clsSimpleCmd::kGet)
-    {
-        string strWriteBatch;
-        iRet = poWrapper->RunPaxos(poCmd->GetEntityID(), poCmd->GetEntry(),
-                iMaxCommitedEntry + 1, vecWBUUID, strWriteBatch);
-        if (iRet != 0)
-        {
-            CertainLogError("cmd %s ret %d", poCmd->GetTextCmd().c_str(), iRet);
-        }
-        else
-        {
-            iRet = poDBImpl->ExcuteCmd(poCmd, strWriteBatch);
-            if (iRet != 0)
-            {
-                CertainLogError("cmd %s ret %d", poCmd->GetTextCmd().c_str(), iRet);
-            }
-        }
-
-        poCmd->SetResult(iRet);
-    }
-    else if (poCmd->GetSubCmdID() == clsSimpleCmd::kSet)
-    {
-        string strWriteBatch;
-        iRet = poDBImpl->ExcuteCmd(poCmd, strWriteBatch);
-        if (iRet != 0)
-        {
-            CertainLogError("cmd %s ret %d", poCmd->GetTextCmd().c_str(), iRet);
-        }
-        else
-        {
-            iRet = poWrapper->RunPaxos(poCmd->GetEntityID(), poCmd->GetEntry(),
-                    iMaxCommitedEntry + 1, vecWBUUID, strWriteBatch);
-            if (iRet != 0)
-            {
-                CertainLogError("cmd %s ret %d", poCmd->GetTextCmd().c_str(), iRet);
-            }
-        }
-
-        poCmd->SetResult(iRet);
-    }
-    else
-    {
-        assert(false);
-    }
-
-    assert(clsIOWorkerRouter::GetInstance()->Go(poCmd) == 0);
-}
-
 int clsUserWorker::CoEpollTick(void * arg)
 {
-	clsUserWorker * pUserWorker = (clsUserWorker*)arg;
-	std::stack<UserRoutine_t *> & IdleCoList = *(pUserWorker->m_poCoWorkList);
+    clsUserWorker * pUserWorker = (clsUserWorker*)arg;
+    std::stack<UserRoutine_t *> & IdleCoList = *(pUserWorker->m_poCoWorkList);
 
-	while( !IdleCoList.empty() )
-	{
-        clsClientCmd *poCmd = NULL;
-        int iRet = pUserWorker->m_poUserQueue->TakeByOneThread(&poCmd);
+    while( !IdleCoList.empty() )
+    {
+        clsCallDataBase *poCallData = NULL;
+        int iRet = pUserWorker->m_poUserQueue->TakeByOneThread(&poCallData);
         if(iRet == 0)
         {
-            assert(poCmd != NULL);
+            assert(poCallData != NULL);
 
             UserRoutine_t * w = IdleCoList.top();
-            w->pData = (void*)poCmd;
+            w->pData = (void*)poCallData;
             w->bHasJob = true;
             IdleCoList.pop();
             co_resume( (stCoRoutine_t*)(w->pCo) );
@@ -98,71 +25,75 @@ int clsUserWorker::CoEpollTick(void * arg)
         else
         {
             break;
-		}
-	}
+        }
+    }
 
-	return 0;
+    return 0;
 }
 
 void * clsUserWorker::UserRoutine(void * arg)
 {
-	UserRoutine_t * pUserRoutine = (UserRoutine_t *)arg;
-	co_enable_hook_sys();
+    UserRoutine_t * pUserRoutine = (UserRoutine_t *)arg;
+    co_enable_hook_sys();
 
-    clsCertainUserBase * pCertainUser = clsCertainWrapper::GetInstance()->GetCertainUser();
-	pCertainUser->SetRoutineID(pUserRoutine->iRoutineID);
+    Certain::clsCertainUserBase * pCertainUser = Certain::clsCertainWrapper::GetInstance()->GetCertainUser();
+    pCertainUser->SetRoutineID(pUserRoutine->iRoutineID);
 
-	while(1)
-	{
-		clsUserWorker * pUserWorker = (clsUserWorker * )pUserRoutine->pSelf;
+    while(1)
+    {
+        clsUserWorker * pUserWorker = (clsUserWorker * )pUserRoutine->pSelf;
 
-		if(!pUserRoutine->bHasJob)
-		{
-			pUserWorker->m_poCoWorkList->push(pUserRoutine);
-			co_yield_ct();
-			continue;
-		}
-		pUserRoutine->bHasJob = false;
-		if(pUserRoutine->pData == NULL)
-		{
-			continue;
-		}
+        if(!pUserRoutine->bHasJob)
+        {
+            pUserWorker->m_poCoWorkList->push(pUserRoutine);
+            co_yield_ct();
+            continue;
+        }
+        pUserRoutine->bHasJob = false;
+        if(pUserRoutine->pData == NULL)
+        {
+            continue;
+        }
 
-        pUserWorker->DoWithUserCmd((clsClientCmd *)pUserRoutine->pData);
+        clsCallDataBase *poCallData = (clsCallDataBase *)pUserRoutine->pData;
+        co_disable_hook_sys();
+        poCallData->Proceed();
+
+        poCallData->Finish(false);
+        co_enable_hook_sys();
+
         pUserRoutine->pData = NULL;
-	}
+    }
 
-	return NULL;
+    return NULL;
 }
 
 void clsUserWorker::Run()
 {
-    SetThreadTitle("user_%u", m_iWorkerID);
+    Certain::SetThreadTitle("user_%u", m_iWorkerID);
     CertainLogInfo("user_%u run", m_iWorkerID);
 
-	co_enable_hook_sys();
-	stCoEpoll_t * ev = co_get_epoll_ct();
+    co_enable_hook_sys();
+    stCoEpoll_t * ev = co_get_epoll_ct();
 
     uint32_t m_iStartRoutineID = 0;
     for (int i = 0; i < 50; ++i)
-	{
-		UserRoutine_t *w = (UserRoutine_t*)calloc( 1,sizeof(UserRoutine_t) );
-		stCoRoutine_t *co = NULL;
-		co_create( &co, NULL, UserRoutine, w );
+    {
+        UserRoutine_t *w = (UserRoutine_t*)calloc( 1,sizeof(UserRoutine_t) );
+        stCoRoutine_t *co = NULL;
+        co_create( &co, NULL, UserRoutine, w );
 
-		int iRoutineID = m_iStartRoutineID + i;
-		w->pCo = (void*)co;
-		w->pSelf = this;
-		w->pData = NULL;
-		w->bHasJob = false;
+        int iRoutineID = m_iStartRoutineID + i;
+        w->pCo = (void*)co;
+        w->pSelf = this;
+        w->pData = NULL;
+        w->bHasJob = false;
         w->iRoutineID = iRoutineID;
-		co_resume( (stCoRoutine_t *)(w->pCo) );
-	}
+        co_resume( (stCoRoutine_t *)(w->pCo) );
+    }
 
     printf("UserWorker idx %d 50 Routine\n", m_iWorkerID);
     CertainLogImpt("UserWorker idx %d 50 Routine", m_iWorkerID);
 
-	co_eventloop( ev, CoEpollTick, this);
+    co_eventloop( ev, CoEpollTick, this);
 }
-
-}; // namespace Certain

@@ -109,6 +109,11 @@ public:
         // Not required.
         return 0;
     }
+
+    virtual int GetSvrAddr(uint64_t iEntityID, uint32_t iAcceptorID, Certain::InetAddr_t & tAddr)
+    {
+        return 0;
+    }
 };
 
 } // namespace Certian

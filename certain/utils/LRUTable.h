@@ -65,7 +65,7 @@ public:
             return NULL;
         }
 
-        return (pointer)m_poFixSizePool->Alloc(count * sizeof(T), false);
+        return (pointer)m_poFixSizePool->Alloc(count * sizeof(T));
     }
 
     void deallocate(pointer ptr, size_t count)
@@ -77,7 +77,7 @@ public:
             return;
         }
 
-        m_poFixSizePool->Free((char *)ptr, false);
+        m_poFixSizePool->Free((char *)ptr);
     }
 };
 

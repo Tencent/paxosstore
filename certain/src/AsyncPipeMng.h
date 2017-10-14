@@ -7,6 +7,7 @@
 namespace Certain
 {
 
+class clsCertainWrapper;
 class clsAsyncPipeMng : public clsSingleton<clsAsyncPipeMng>
 {
 private:
@@ -22,6 +23,8 @@ private:
     uint32_t m_iMaxGroupLimit;
 
     clsMutex m_oMutex;
+
+    clsCertainWrapper *m_poCertain;
 
 public:
     clsAsyncPipeMng() { }

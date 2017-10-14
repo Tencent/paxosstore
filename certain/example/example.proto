@@ -1,0 +1,101 @@
+syntax = "proto2";
+
+package example;
+
+message CardInfo
+{
+    // User name.
+    optional bytes user_name = 1;
+
+    // User id. Once it was set, it won't be changed.
+    optional uint64 user_id = 2;
+
+    // Last time to modify card information.
+    optional uint32 last_modified_time = 3;
+   
+    // Balance of the card.
+    optional uint64 balance = 4;
+};
+
+message CardRequest 
+{
+    optional uint64 card_id = 1;
+    optional CardInfo card_info = 2;
+    optional int32 delta = 3;
+    optional uint64 uuid = 4;
+}
+
+message CardResponse
+{
+    optional CardInfo card_info = 1;
+}
+
+message GetRequest
+{
+    // GetDBEntityMeta & GetAllForCertain & RecoverData
+    optional uint64 entity_id = 1;
+
+    // GetAllForCertain
+    optional uint32 max_size = 11;
+    optional bytes next_key = 12;
+    optional uint64 sequence_number = 13;
+}
+
+message GetResponse
+{
+    // GetDBEntityMeta
+    optional uint64 max_commited_entry = 1;
+    optional uint32 flag = 2;
+    optional uint64 sequence_number = 3;
+
+    // GetAllForCertain
+    optional bytes next_key = 11;
+    optional bytes value = 12;
+}
+
+enum StatusCode
+{
+    eCardBalanceNotEnough = 8000;
+    eCardNotExist = 8001;
+    eCardExist = 8002;
+}
+
+enum OperCode
+{
+    eInsertCard = 1;
+    eUpdateCard = 2;
+    eDeleteCard = 3;
+    eSelectCard = 4;
+
+    eGetDBEntityMeta = 11;
+    eGetAllForCertain = 12;
+    eRecoverData = 13;
+}
+
+message EchoRequest
+{
+    optional bytes value = 1;
+}
+
+message EchoResponse
+{
+    optional bytes value = 1;
+}
+
+service CardServer
+{
+    rpc Echo (EchoRequest) returns (EchoResponse) {}
+
+    // Write command
+    rpc InsertCard (CardRequest) returns (CardResponse) {}
+    rpc UpdateCard (CardRequest) returns (CardResponse) {}
+    rpc DeleteCard (CardRequest) returns (CardResponse) {}
+
+    // Read command
+    rpc SelectCard (CardRequest) returns (CardResponse) {}
+
+    // GetAllAndSet
+    rpc GetDBEntityMeta (GetRequest) returns (GetResponse) {}
+    rpc GetAllForCertain (GetRequest) returns (GetResponse) {}
+    rpc RecoverData (GetRequest) returns (GetResponse) {}
+}

@@ -6,19 +6,13 @@
 #include "PLogWorker.h"
 #include <sys/syscall.h>
 
-#if CERTAIN_SIMPLE_EXAMPLE
-#include "example/UserWorker.h"
-#endif
+#define CERTAIN_IOWORKER_IO_SKIP(x) \
+do { iCurr += (x); } while(0);
+#define CERTAIN_IOWORKER_IO_ERROR_SKIP(x) \
+do { iErrorSkipped += (x); iCurr += (x); } while(0);
 
 namespace Certain
 {
-
-#define gettid() syscall(__NR_gettid)  
-
-#define IO_SKIP(x) \
-do { iCurr += (x); } while(0);
-#define IO_ERROR_SKIP(x) \
-do { iErrorSkipped += (x); iCurr += (x); } while(0);
 
 int clsNotifyPipe::NotifyByMultiThread()
 {
@@ -203,7 +197,8 @@ int clsIOWorkerRouter::GoAndDeleteIfFailed(clsCmdBase *poCmd)
         clsPaxosCmd *poPaxosCmd = dynamic_cast<clsPaxosCmd *>(poCmd);
 
         if (poPaxosCmd->GetEntry() < poPaxosCmd->GetMaxChosenEntry()
-                || (poPaxosCmd->GetEntry() == poPaxosCmd->GetMaxChosenEntry() && !poPaxosCmd->GetSrcRecord().bChosen))
+                || (poPaxosCmd->GetEntry() == poPaxosCmd->GetMaxChosenEntry()
+                    && !poPaxosCmd->GetSrcRecord().bChosen))
         {
             iRet = m_poCatchUpWorker->PushCatchUpCmdByMultiThread(poPaxosCmd);
             if (iRet != 0)
@@ -243,16 +238,6 @@ int clsIOWorker::PutToIOReqQueue(clsIOChannel *poChannel,
 
     CertainLogDebug("cmd: %s", poCmd->GetTextCmd().c_str());
 
-#if CERTAIN_SIMPLE_EXAMPLE
-    if (poCmd->GetCmdID() == kSimpleCmd)
-    {
-        clsClientCmd *poClientCmd = dynamic_cast<clsClientCmd *>(poCmd);
-        assert(poClientCmd != NULL);
-        assert(clsUserWorker::PushUserCmd(poClientCmd) == 0);
-        return 0;
-    }
-#endif
-
     AssertEqual(poCmd->GetCmdID(), kPaxosCmd);
     int iRet = poIOReqQueue->PushByMultiThread(poCmd);
     if (iRet != 0)
@@ -290,7 +275,7 @@ int clsIOWorker::ParseIOBuffer(clsIOChannel *poChannel, char *pcBuffer,
         if (ptRP->hMagicNum != RP_MAGIC_NUM)
         {
             ConvertToNetOrder(ptRP);
-            IO_ERROR_SKIP(1);
+            CERTAIN_IOWORKER_IO_ERROR_SKIP(1);
             continue;
         }
 
@@ -313,7 +298,7 @@ int clsIOWorker::ParseIOBuffer(clsIOChannel *poChannel, char *pcBuffer,
                 CertainLogFatal("BUG checksum err conn: %s",
                         poChannel->GetConnInfo().ToString().c_str());
                 ConvertToNetOrder(ptRP);
-                IO_ERROR_SKIP(1);
+                CERTAIN_IOWORKER_IO_ERROR_SKIP(1);
                 continue;
             }
         }
@@ -321,7 +306,7 @@ int clsIOWorker::ParseIOBuffer(clsIOChannel *poChannel, char *pcBuffer,
         poCmd = poCmdFactory->CreateCmd(pcBuffer + iCurr, iTotalLen);
         if (poCmd == NULL)
         {
-            IO_ERROR_SKIP(iTotalLen);
+            CERTAIN_IOWORKER_IO_ERROR_SKIP(iTotalLen);
             continue;
         }
 
@@ -336,13 +321,13 @@ int clsIOWorker::ParseIOBuffer(clsIOChannel *poChannel, char *pcBuffer,
         int iRet = PutToIOReqQueue(poChannel, poCmd);
         if (iRet != 0)
         {
-            IO_ERROR_SKIP(iTotalLen);
+            CERTAIN_IOWORKER_IO_ERROR_SKIP(iTotalLen);
             delete poCmd, poCmd = NULL;
         }
         else
         {
             iCmdCnt++;
-            IO_SKIP(iTotalLen);
+            CERTAIN_IOWORKER_IO_SKIP(iTotalLen);
         }
     }
 
@@ -543,7 +528,8 @@ void clsIOWorker::CleanBrokenChannel(clsIOChannel *poChannel)
             if (*iter == poChannel)
             {
                 m_vecIntChannel[iServerID].erase(iter);
-                int32_t iCheck = clsIOWorkerRouter::GetInstance()->SubAndGetIntChannelCnt(m_iWorkerID, iServerID, 1);
+                int32_t iCheck = clsIOWorkerRouter::GetInstance()->SubAndGetIntChannelCnt(
+                        m_iWorkerID, iServerID, 1);
                 AssertNotMore(0, iCheck);
                 bHasErased = true;
                 break;
@@ -577,7 +563,8 @@ void clsIOWorker::RemoveChannel(uint32_t iServerID)
         m_poEpollIO->RemoveAndCloseFD(poChannel);
         delete poChannel, poChannel = NULL;
 
-        iCnt = clsIOWorkerRouter::GetInstance()->SubAndGetIntChannelCnt(m_iWorkerID, iServerID, 1);
+        iCnt = clsIOWorkerRouter::GetInstance()->SubAndGetIntChannelCnt(
+                m_iWorkerID, iServerID, 1);
     }
 
     assert(iCnt == 0);
@@ -605,38 +592,6 @@ void clsIOWorker::PrintConnInfo()
 
     return;
 }
-/*
-   void clsIOWorker::ReduceChannel()
-   {
-   for(uint32_t i=0; i<m_iServerNum; i++)
-   {
-   uint32_t iCnt = m_vecIntChannel[i].size();
-   if(iCnt <= 1)
-   {
-   continue;
-   }
-
-   vector<clsIOChannel *>::iterator iter;
-   for (iter = m_vecIntChannel[i].begin();
-   iter != m_vecIntChannel[i].end(); ++iter)
-   {
-   clsIOChannel * poChannel = *iter;	
-   ConnInfo_t tConnInfo = poChannel->GetConnInfo();
-   if(tConnInfo.tLocalAddr.GetNetOrderIP() < tConnInfo.tPeerAddr.GetNetOrderIP())
-   {
-   continue;
-   }
-
-   m_vecIntChannel[i].erase(iter);
-   m_poEpollIO->RemoveAndCloseFD(poChannel);
-   delete poChannel, poChannel = NULL;
-   clsIOWorkerRouter::GetInstance()->SubAndGetIntChannelCnt(m_iWorkerID, i, 1);
-   break;
-   }
-   }
-   return;
-   }
- */
 
 void clsIOWorker::ServeNewConn()
 {
@@ -673,7 +628,8 @@ void clsIOWorker::ServeNewConn()
         {
             AssertLess(iServerID, m_iServerNum);
             m_vecIntChannel[iServerID].push_back(poChannel);
-            int32_t iCurrCnt = clsIOWorkerRouter::GetInstance()->GetAndAddIntChannelCnt(m_iWorkerID, iServerID, 1);
+            int32_t iCurrCnt = clsIOWorkerRouter::GetInstance()->GetAndAddIntChannelCnt(
+                    m_iWorkerID, iServerID, 1);
 
             if (uint32_t(iCurrCnt) >= m_iIntConnLimit)
             {
@@ -1015,7 +971,6 @@ void clsIOWorker::UpdateSvrAddr()
             continue;
         }
 
-        printf("%s replace %s\n", tmpServerAddr[i].ToString().c_str(), m_vecServerAddr[i].ToString().c_str());
         RemoveChannel(i);
         bNeedUpdate = true;
     }
@@ -1028,17 +983,7 @@ void clsIOWorker::UpdateSvrAddr()
 
 void clsIOWorker::Run()
 {
-    int cpu_cnt = GetCpuCount();
-
-    if (cpu_cnt == 48)
-    {
-        SetCpu(8, cpu_cnt);
-    }
-    else
-    {
-        SetCpu(4, cpu_cnt);
-    }
-
+    // Bind cpu affinity here.
     SetThreadTitle("io_%u_%u", m_iLocalServerID, m_iWorkerID);
     CertainLogInfo("io_%u_%u run", m_iLocalServerID, m_iWorkerID);
 
@@ -1053,7 +998,7 @@ void clsIOWorker::Run()
             break;
         }
 
-        if((llLoop++) % 100 == 0)
+        if ((llLoop++) % 100 == 0)
         {
             UpdateSvrAddr();
 
@@ -1061,8 +1006,6 @@ void clsIOWorker::Run()
             {
                 PrintConnInfo();
             }
-
-            //ReduceChannel();
         }
 
         MakeSrvConn();

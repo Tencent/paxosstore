@@ -233,71 +233,71 @@ int clsCircleQueue<Type>::Push(Type tElt)
 
 // Circular queue definitions.
 
-#define	CIRCLEQ_HEAD(name, type) \
-	struct name { \
-		type *cqh_first; \
-		type *cqh_last; \
-	}
+#define CIRCLEQ_HEAD(name, type) \
+    struct name { \
+        type *cqh_first; \
+        type *cqh_last; \
+    }
 
-#define	CIRCLEQ_ENTRY(type) \
-	struct { \
-		type *cqe_next; \
-		type *cqe_prev; \
-	}
+#define CIRCLEQ_ENTRY(type) \
+    struct { \
+        type *cqe_next; \
+        type *cqe_prev; \
+    }
 
 // Circular queue functions.
 
-#define	CIRCLEQ_INIT(type, head) do { \
-		(head)->cqh_first = (type *)(head); \
-		(head)->cqh_last = (type *)(head); \
-	} while (0)
+#define CIRCLEQ_INIT(type, head) do { \
+        (head)->cqh_first = (type *)(head); \
+        (head)->cqh_last = (type *)(head); \
+    } while (0)
 
-#define	CIRCLEQ_ENTRY_INIT(elm, field) do { \
-		(elm)->field.cqe_next = NULL; \
-		(elm)->field.cqe_prev = NULL; \
-	} while (0)
+#define CIRCLEQ_ENTRY_INIT(elm, field) do { \
+        (elm)->field.cqe_next = NULL; \
+        (elm)->field.cqe_prev = NULL; \
+    } while (0)
 
 #define IS_ENTRY_IN_CIRCLEQ(elm, field) \
-	((elm)->field.cqe_next != NULL && (elm)->field.cqe_prev != NULL)
+    ((elm)->field.cqe_next != NULL && (elm)->field.cqe_prev != NULL)
 
-#define	CIRCLEQ_INSERT_HEAD(type, head, elm, field) do { \
-		(elm)->field.cqe_next = (head)->cqh_first; \
-		(elm)->field.cqe_prev = (type *)(head); \
-		if ((head)->cqh_last == (type *)(head)) \
-			(head)->cqh_last = (elm); \
-		else \
-			(head)->cqh_first->field.cqe_prev = (elm); \
-		(head)->cqh_first = (elm); \
+#define CIRCLEQ_INSERT_HEAD(type, head, elm, field) do { \
+        (elm)->field.cqe_next = (head)->cqh_first; \
+        (elm)->field.cqe_prev = (type *)(head); \
+        if ((head)->cqh_last == (type *)(head)) \
+            (head)->cqh_last = (elm); \
+        else \
+            (head)->cqh_first->field.cqe_prev = (elm); \
+        (head)->cqh_first = (elm); \
 } while (0)
 
-#define	CIRCLEQ_INSERT_TAIL(type, head, elm, field) do { \
-		(elm)->field.cqe_next = (type *)(head); \
-		(elm)->field.cqe_prev = (head)->cqh_last; \
-		if ((head)->cqh_first == (type *)(head)) \
-			(head)->cqh_first = (elm); \
-		else \
-			(head)->cqh_last->field.cqe_next = (elm); \
-		(head)->cqh_last = (elm); \
+#define CIRCLEQ_INSERT_TAIL(type, head, elm, field) do { \
+        (elm)->field.cqe_next = (type *)(head); \
+        (elm)->field.cqe_prev = (head)->cqh_last; \
+        if ((head)->cqh_first == (type *)(head)) \
+            (head)->cqh_first = (elm); \
+        else \
+            (head)->cqh_last->field.cqe_next = (elm); \
+        (head)->cqh_last = (elm); \
 } while (0)
 
-#define	CIRCLEQ_REMOVE(type, head, elm, field) do { \
-		if ((elm)->field.cqe_next == (type *)(head)) \
-			(head)->cqh_last = (elm)->field.cqe_prev; \
-		else \
-			(elm)->field.cqe_next->field.cqe_prev = \
-			    (elm)->field.cqe_prev; \
-		if ((elm)->field.cqe_prev == (type *)(head)) \
-			(head)->cqh_first = (elm)->field.cqe_next; \
-		else \
-			(elm)->field.cqe_prev->field.cqe_next = \
-			    (elm)->field.cqe_next; \
+#define CIRCLEQ_REMOVE(type, head, elm, field) do { \
+        if ((elm)->field.cqe_next == (type *)(head)) \
+            (head)->cqh_last = (elm)->field.cqe_prev; \
+        else \
+            (elm)->field.cqe_next->field.cqe_prev = \
+                (elm)->field.cqe_prev; \
+        if ((elm)->field.cqe_prev == (type *)(head)) \
+            (head)->cqh_first = (elm)->field.cqe_next; \
+        else \
+            (elm)->field.cqe_prev->field.cqe_next = \
+                (elm)->field.cqe_next; \
 } while (0)
 
 // Circular queue access methods.
 
-#define	CIRCLEQ_EMPTY(type, head)		((head)->cqh_first == (type *)(head))
-#define	CIRCLEQ_FIRST(head)		((head)->cqh_first)
-#define	CIRCLEQ_LAST(head)		((head)->cqh_last)
+#define    CIRCLEQ_EMPTY(type, head)        ((head)->cqh_first == (type *)(head))
+#define    CIRCLEQ_FIRST(head)        ((head)->cqh_first)
+#define    CIRCLEQ_LAST(head)        ((head)->cqh_last)
 
 } // namespace Certain
 

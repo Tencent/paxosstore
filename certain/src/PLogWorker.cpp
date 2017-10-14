@@ -9,7 +9,7 @@ namespace Certain
 
 static clsUseTimeStat *s_poPutTimeStat;
 static clsUseTimeStat *s_poGetTimeStat;
-static clsUseTimeStat *s_poLoadMaxCommitedEntryTimeStat;
+static clsUseTimeStat *s_poGetEntityMetaTimeStat;
 static clsUseTimeStat *s_poLoadUncommitedEntrysTimeStat;
 static clsUseTimeStat *s_poPLogCmdOuterTimeStat;
 static clsUseTimeStat *s_poEpollStart2End;
@@ -75,7 +75,7 @@ void clsPLogBase::InitUseTimeStat()
 {
     s_poPutTimeStat = new clsUseTimeStat("Put");
     s_poGetTimeStat = new clsUseTimeStat("Get");
-    s_poLoadMaxCommitedEntryTimeStat = new clsUseTimeStat("LoadMaxCommitedEntry");
+    s_poGetEntityMetaTimeStat = new clsUseTimeStat("GetEntityMeta");
     s_poLoadUncommitedEntrysTimeStat = new clsUseTimeStat("LoadUncommitedEntrys");
     s_poPLogCmdOuterTimeStat = new clsUseTimeStat("PLogCmdOuter");
     s_poEpollStart2End = new clsUseTimeStat("EpollStart2End");
@@ -94,7 +94,7 @@ void clsPLogBase::PrintUseTimeStat()
 
     s_poPutTimeStat->Print();
     s_poGetTimeStat->Print();
-    s_poLoadMaxCommitedEntryTimeStat->Print();
+    s_poGetEntityMetaTimeStat->Print();
     s_poLoadUncommitedEntrysTimeStat->Print();
     s_poPLogCmdOuterTimeStat->Print();
     s_poEpollStart2End->Print();
@@ -255,7 +255,6 @@ int clsPLogBase::PutRecord(uint64_t iEntityID, uint64_t iEntry,
                         iEntityID, iEntry, iRet);
                 return -2;
             }
-
 #if 0
             CertainLogZero("E(%lu, %lu) record: %s",
                     iEntityID, iEntry, EntryRecordToString(tRecord).c_str());
@@ -352,7 +351,8 @@ int clsPLogWorker::DoWithPLogRequest(clsPaxosCmd *poPaxosCmd)
         iRet = m_poPLogEngine->GetRecord(iEntityID, iEntry, tSrcRecord);
         if(iRet == 0)
         {
-            CertainLogInfo("record: %s bChose %d", EntryRecordToString(tSrcRecord).c_str(), tSrcRecord.bChosen);
+            CertainLogInfo("record: %s bChose %d",
+                    EntryRecordToString(tSrcRecord).c_str(), tSrcRecord.bChosen);
             if(tSrcRecord.bChosen)
             {
                 poPaxosCmd->SetSrcRecord(tSrcRecord);
@@ -438,14 +438,14 @@ int clsPLogWorker::FillRecoverCmd(clsRecoverCmd *poRecoverCmd)
     uint64_t iEntityID = poRecoverCmd->GetEntityID();
 
     uint64_t iMaxCommitedEntry = 0;
-    TIMERUS_START(iLoadMaxCommitedEntryUseTimeUS);
+    TIMERUS_START(iGetEntityMetaUseTimeUS);
     uint32_t iFlag = 0;
-    int iRet = m_poDBEngine->LoadMaxCommitedEntry(iEntityID, iMaxCommitedEntry, iFlag);
-    TIMERUS_STOP(iLoadMaxCommitedEntryUseTimeUS);
-    s_poLoadMaxCommitedEntryTimeStat->Update(iLoadMaxCommitedEntryUseTimeUS);
+    int iRet = m_poDBEngine->GetEntityMeta(iEntityID, iMaxCommitedEntry, iFlag);
+    TIMERUS_STOP(iGetEntityMetaUseTimeUS);
+    s_poGetEntityMetaTimeStat->Update(iGetEntityMetaUseTimeUS);
     if (iRet != 0 && iRet != eRetCodeNotFound)
     {
-        CertainLogFatal("LoadMaxCommitedEntry iFlag %u cmd: %s ret %d",
+        CertainLogFatal("GetEntityMeta iFlag %u cmd: %s ret %d",
                 iFlag, poRecoverCmd->GetTextCmd().c_str(), iRet);
         return -1;
     }
@@ -453,13 +453,13 @@ int clsPLogWorker::FillRecoverCmd(clsRecoverCmd *poRecoverCmd)
     // For triggling B/C, which may don't recieve requests, to get all.
     if (iFlag == kDBFlagCheckGetAll)
     {
-        CertainLogError("iEntityID %lu LoadMaxCommitedEntry iFlag %u", iEntityID, iFlag);
+        CertainLogError("iEntityID %lu GetEntityMeta iFlag %u", iEntityID, iFlag);
         poRecoverCmd->SetCheckGetAll(true);
         return eRetCodeGetAllPending;
     }
     else if (iFlag != 0)
     {
-        CertainLogError("iEntityID %lu LoadMaxCommitedEntry iFlag %u", iEntityID, iFlag);
+        CertainLogError("iEntityID %lu GetEntityMeta iFlag %u", iEntityID, iFlag);
         return eRetCodeDBStatusErr;
     }
 
@@ -762,25 +762,17 @@ int clsPLogWorker::CoEpollTick(void * arg)
         return -1;
     }
 
-    static __thread uint64_t iLoopCnt = 0;
-
     TIMERUS_START(iCoEpollTickTimeUS);
     uint64_t iGetFromIdleCoListCnt = 0;
 
-    while( !IdleCoList.empty() )
+    while (!IdleCoList.empty())
     {
         clsCmdBase *poCmd = NULL;
         int iRet = pPLogWorker->m_poPLogReqQueue->TakeByOneThread(&poCmd);
-        if(iRet == 0 && poCmd)
+        if (iRet == 0 && poCmd)
         {
             uint64_t iUseTimeUS = GetCurrTimeUS() - poCmd->GetTimestampUS();
             s_poPLogReqQueueWait->Update(iUseTimeUS);
-
-            if( ( (++iLoopCnt) % 10000) == 0)
-            {
-                CertainLogImpt("PLogWorkerID %u PLogQueue size %u",
-                        pPLogWorker->m_iWorkerID, pPLogWorker->m_poPLogReqQueue->Size());
-            }
 
             PLogRoutine_t * w = IdleCoList.top();
             w->pData = (void*)poCmd;
@@ -807,17 +799,7 @@ int clsPLogWorker::CoEpollTick(void * arg)
 
 void clsPLogWorker::Run()
 {
-    int cpu_cnt = GetCpuCount();
-
-    if (cpu_cnt == 48)
-    {
-        SetCpu(8, cpu_cnt);
-    }
-    else
-    {
-        SetCpu(4, cpu_cnt);
-    }
-
+    // Bind cpu affinity here.
     uint32_t iLocalServerID = m_poConf->GetLocalServerID();
     SetThreadTitle("plog_%u_%u", iLocalServerID, m_iWorkerID);
     CertainLogInfo("plog_%u_%u run", iLocalServerID, m_iWorkerID);

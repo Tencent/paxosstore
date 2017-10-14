@@ -1,105 +1,87 @@
-#ifndef CERTAIN_EXAMPLE_SIMPLE_SIMPLEPLOG_H_
-#define CERTAIN_EXAMPLE_SIMPLE_SIMPLEPLOG_H_
+#pragma once
+
+// db
+#include "DBType.h"
+#include "db.h"
+#include "slice.h"
+#include "write_batch.h"
 
 #include "Certain.h"
-#include "simple/KVEngine.h"
+#include "Coding.h"
 
-namespace Certain
+class clsPLogFilter : public dbtype::CompactionFilter
 {
-
-class clsPLogImpl : public clsPLogBase
-{
-private:
-	struct EntryKey_t
-	{
-		uint64_t iEntityID;
-		uint64_t iEntry;
-		uint64_t iValueID;
-
-		EntryKey_t() { }
-
-		EntryKey_t(uint64_t iEntityID, uint64_t iEntry,
-				uint64_t iValueID = 0)
-		{
-			this->iEntityID = iEntityID;
-			this->iEntry = iEntry;
-			this->iValueID = iValueID;
-		}
-	};
-
-    uint64_t ntohll(uint64_t i)
-    {
-        if (__BYTE_ORDER == __LITTLE_ENDIAN) {
-            return (((uint64_t)ntohl((uint32_t)i)) << 32) | (uint64_t)(ntohl((uint32_t)(i >> 32)));
-        }
-        return i;
-    }
-
-    uint64_t htonll(uint64_t i)
-    {
-        if (__BYTE_ORDER == __LITTLE_ENDIAN) {
-            return (((uint64_t)htonl((uint32_t)i)) << 32) | ((uint64_t)htonl((uint32_t)(i >> 32)));
-        }
-        return i;
-    }
-
-	string Serialize(const EntryKey_t &tKey)
-	{
-        EntryKey_t t = tKey;
-        t.iEntityID = htonll(tKey.iEntityID);
-        t.iEntry = htonll(tKey.iEntry);
-        t.iValueID = htonll(tKey.iValueID);
-		return string((const char *)&t, sizeof(t));
-	}
-
-	EntryKey_t Parse(const string &strKey)
-	{
-		EntryKey_t t = *(EntryKey_t *)(strKey.data());
-        t.iEntityID = ntohll(t.iEntityID);
-        t.iEntry = ntohll(t.iEntry);
-        t.iValueID = ntohll(t.iValueID);
-        return t;
-	}
-
-	clsKVEngine *m_poKVEngine;
-
 public:
-	clsPLogImpl(clsKVEngine *poKVEngine)
-			: m_poKVEngine(poKVEngine) { assert(__BYTE_ORDER == __LITTLE_ENDIAN); }
-
-	virtual ~clsPLogImpl() { }
-
-	virtual int PutValue(uint64_t iEntityID, uint64_t iEntry,
-			uint64_t iValueID, const string &strValue);
-
-	virtual int GetValue(uint64_t iEntityID, uint64_t iEntry,
-			uint64_t iValueID, string &strValue);
-
-	virtual int Put(uint64_t iEntityID, uint64_t iEntry,
-			const string &strRecord);
-
-    virtual int PutWithPLogEntityMeta(uint64_t iEntityID, uint64_t iEntry,
-            const PLogEntityMeta_t &tMeta, const string &strRecord)
+    bool Filter(int iLevel, const dbtype::Slice& oKey,
+            const dbtype::Slice& oExistingValue, std::string* strNewValue,
+            bool* bValueChanged) const override
     {
-        assert(false);
-        return -1;
+        uint64_t iEntityID = 0, iEntry = 0, iValueID = 0, iTimestampMS = 0;
+        if (!DecodePLogKey(oKey, iEntityID, iEntry, &iTimestampMS) &&
+                !DecodePLogValueKey(oKey, iEntityID, iEntry, iValueID, &iTimestampMS))
+        {
+            return false;
+        }
+        return Certain::clsCertainWrapper::GetInstance()->CheckIfEntryDeletable(
+                iEntityID, iEntry, iTimestampMS);
     }
 
-    virtual int GetPLogEntityMeta(uint64_t iEntityID,
-            PLogEntityMeta_t &tMeta)
-    {
-        assert(false);
-        return -1;
-    }
-
-	virtual int Get(uint64_t iEntityID, uint64_t iEntry,
-			string &strRecord);
-
-	virtual int LoadUncommitedEntrys(uint64_t iEntityID,
-			uint64_t iMaxCommitedEntry, uint64_t iMaxLoadingEntry,
-			vector< pair<uint64_t, string> > &vecRecord, bool &bHasMore);
+    const char* Name() const override { return "clsPLogFilter"; }
 };
 
-} // namespace Certain
+class clsPLogComparator : public dbtype::Comparator
+{
+    virtual int Compare(const dbtype::Slice& a, const dbtype::Slice& b) const
+    {
+        assert(a.size() >= 8 && b.size() >= 8);
+        dbtype::Slice ta = a, tb = b;
+        ta.remove_prefix(8);
+        tb.remove_prefix(8);
+        return ta.compare(tb);
+    }
 
-#endif
+    const char* Name() const override { return "clsPLogComparator"; }
+
+    void FindShortestSeparator(std::string* start, const dbtype::Slice& limit) const
+    {
+        // return with *start unchanged
+    }
+
+    virtual void FindShortSuccessor(std::string* key) const
+    {
+        // return with *key unchanged
+    }
+};
+
+class clsPLogImpl : public Certain::clsPLogBase
+{
+private:
+    dbtype::DB *m_poLevelDB;
+
+public:
+    clsPLogImpl(dbtype::DB *poLevelDB) : m_poLevelDB(poLevelDB) { }
+
+    virtual ~clsPLogImpl() { }
+
+    virtual int PutValue(uint64_t iEntityID, uint64_t iEntry,
+            uint64_t iValueID, const string &strValue);
+
+    virtual int GetValue(uint64_t iEntityID, uint64_t iEntry,
+            uint64_t iValueID, string &strValue);
+
+    virtual int Put(uint64_t iEntityID, uint64_t iEntry,
+            const string &strRecord);
+
+    virtual int Get(uint64_t iEntityID, uint64_t iEntry,
+            string &strRecord);
+
+    virtual int PutWithPLogEntityMeta(uint64_t iEntityID, uint64_t iEntry,
+            const Certain::PLogEntityMeta_t &tMeta, const string &strRecord);
+
+    virtual int GetPLogEntityMeta(uint64_t iEntityID,
+            Certain::PLogEntityMeta_t &tMeta);
+
+    virtual int LoadUncommitedEntrys(uint64_t iEntityID,
+            uint64_t iMaxCommitedEntry, uint64_t iMaxLoadingEntry,
+            vector< pair<uint64_t, string> > &vecRecord, bool &bHasMore);
+};

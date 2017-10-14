@@ -64,7 +64,7 @@ EntryInfo_t *clsEntryInfoMng::CreateEntryInfo(EntityInfo_t *ptEntityInfo,
     }
 
     //EntryInfo_t *ptInfo = (EntryInfo_t *)calloc(1, sizeof(EntryInfo_t));
-    EntryInfo_t *ptInfo = (EntryInfo_t *)m_poFixSizePool->Alloc(sizeof(EntryInfo_t), false);
+    EntryInfo_t *ptInfo = (EntryInfo_t *)m_poFixSizePool->Alloc(sizeof(EntryInfo_t));
     Assert(ptInfo != NULL);
     memset(ptInfo, 0, sizeof(EntryInfo_t));
 
@@ -141,7 +141,7 @@ void clsEntryInfoMng::DestroyEntryInfo(EntryInfo_t *ptInfo)
     delete ptInfo->poMachine, ptInfo->poMachine = NULL;
 
     //free(ptInfo);
-    m_poFixSizePool->Free((char *)ptInfo, false);
+    m_poFixSizePool->Free((char *)ptInfo);
 
     m_iDestroyCnt++;
 

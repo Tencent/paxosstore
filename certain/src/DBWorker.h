@@ -17,8 +17,6 @@ private:
     clsDBReqQueue *m_poDBReqQueue;
     clsCertainWrapper *m_poCertain;
 
-#define MAX_BATCH_CNT 50 
-
     struct DBRoutine_t
     {
         void * pCo;
@@ -35,7 +33,7 @@ private:
 
     uint32_t m_iStartRoutineID;
 
-    void RunApplyTask(clsClientCmd *poCmd, uint64_t &iLoopCnt);
+    void RunApplyTask(clsClientCmd *poCmd, uint64_t &iPLogGetCnt);
 
 public:
     clsDBWorker(uint32_t iWorkerID, clsConfigure *poConf,

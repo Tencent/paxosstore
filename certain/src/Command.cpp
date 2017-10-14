@@ -1,9 +1,5 @@
 #include "Command.h"
 
-#if CERTAIN_SIMPLE_EXAMPLE
-#include "example/SimpleCmd.h"
-#endif
-
 namespace Certain
 {
 
@@ -71,6 +67,7 @@ void clsPaxosCmd::Init(uint32_t iAcceptorID,
         const EntryRecord_t *ptDest)
 {
     m_bCheckEmpty = false;
+    m_bQuickRsp = false;
     m_bPLogError = false;
     m_bPLogReturn = false;
     m_bPLogLoad = false;
@@ -168,8 +165,9 @@ int clsPaxosCmd::ParseFromArray(const char *pcBuffer, uint32_t iLen)
         m_tDestRecord.iPromisedNum = INVALID_PROPOSAL_NUM;
     }
 
+    m_bQuickRsp = oPaxosCmd.quick_rsp();
+
     m_iMaxChosenEntry = oPaxosCmd.max_chosen_entry();
-    m_iResult = oPaxosCmd.result();
 
     return 0;
 }
@@ -208,13 +206,11 @@ int clsPaxosCmd::SerializeToArray(char *pcBuffer, uint32_t iLen)
         oPaxosCmd.set_check_empty(true);
     }
 
+    oPaxosCmd.set_quick_rsp(m_bQuickRsp);
+
     if (m_iMaxChosenEntry > 0)
     {
         oPaxosCmd.set_max_chosen_entry(m_iMaxChosenEntry);
-    }
-    if (m_iResult != 0)
-    {
-        oPaxosCmd.set_result(m_iResult);
     }
 
     return SerializeMsgToArray(oPaxosCmd, pcBuffer, iLen);
@@ -312,11 +308,6 @@ clsCmdBase *clsCmdFactory::CreateCmd(uint16_t hCmdID, const char *pcBuffer,
             {
                 poCmd = poPool->NewObjPtr();
             }
-            iRet = poCmd->ParseFromArray(pcBuffer, iLen);
-            break;
-
-        case kSimpleCmd:
-            poCmd = new clsSimpleCmd;
             iRet = poCmd->ParseFromArray(pcBuffer, iLen);
             break;
 

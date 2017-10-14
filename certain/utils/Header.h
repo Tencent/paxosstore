@@ -46,8 +46,6 @@
 #include <unordered_map>
 #include <stack>
 
-#include <tr1/memory>
-
 using namespace std;
 
 #endif // CERTAIN_HEADER_H_

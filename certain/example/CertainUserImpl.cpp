@@ -1,5 +1,7 @@
 #include "CertainUserImpl.h"
 
+const uint16_t clsCertainUserImpl::kPort = 50051;
+
 int clsCertainUserImpl::GetLocalAcceptorID(uint64_t iEntityID,
 		uint32_t &iLocalAcceptorID)
 {
@@ -18,7 +20,19 @@ int clsCertainUserImpl::GetServerID(uint64_t iEntityID,
 
 int clsCertainUserImpl::InitServerAddr(Certain::clsConfigure *poConf)
 {
-	m_poConf = poConf;
 	poConf->SetServerNum(poConf->GetServerAddrs().size());
+	poConf->SetAcceptorNum(poConf->GetServerAddrs().size());
+	m_poConf = poConf;
 	return 0;
+}
+
+int clsCertainUserImpl::GetSvrAddr(uint64_t iEntityID, uint32_t iAcceptorID, Certain::InetAddr_t & tAddr)
+{
+    uint32_t iServerID = 0;
+    GetServerID(iEntityID, iAcceptorID, iServerID);
+    if (iServerID >= m_poConf->GetServerNum()) assert(false);
+
+    tAddr = m_poConf->GetServerAddrs()[iServerID];
+
+    return 0;
 }

@@ -26,10 +26,10 @@ int clsCertainWrapper::GetEntityInfo(uint64_t iEntityID, EntityInfo_t &tEntityIn
 
     uint64_t iMaxCommitedEntry = 0;
     uint32_t iFlag = 0;
-    iRet = m_poDBEngine->LoadMaxCommitedEntry(iEntityID, iMaxCommitedEntry, iFlag);
+    iRet = m_poDBEngine->GetEntityMeta(iEntityID, iMaxCommitedEntry, iFlag);
     if (iRet != 0)
     {
-        CertainLogError("LoadMaxCommitedEntry iEntityID %lu ret %d", iEntityID, iRet);
+        CertainLogError("GetEntityMeta iEntityID %lu ret %d", iEntityID, iRet);
     }
 
     tMeta.iMaxCommitedEntry = iMaxCommitedEntry;
@@ -74,10 +74,10 @@ int clsCertainWrapper::EntityCatchUp(uint64_t iEntityID, uint64_t &iMaxCommitedE
 
     uint32_t iFlag = 0;
     iMaxCommitedEntry = 0;
-    int iRet = m_poDBEngine->LoadMaxCommitedEntry(iEntityID, iMaxCommitedEntry, iFlag);
+    int iRet = m_poDBEngine->GetEntityMeta(iEntityID, iMaxCommitedEntry, iFlag);
     if (iRet != 0 && iRet != eRetCodeNotFound)
     {
-        CertainLogError("iEntityID %lu LoadMaxCommitedEntry ret %d", iEntityID, iRet); 
+        CertainLogError("iEntityID %lu GetEntityMeta ret %d", iEntityID, iRet); 
         return iRet;
     }
 
@@ -104,10 +104,10 @@ int clsCertainWrapper::EntityCatchUp(uint64_t iEntityID, uint64_t &iMaxCommitedE
 
         iFlag = 0;
         iMaxCommitedEntry = 0;
-        iRet = m_poDBEngine->LoadMaxCommitedEntry(iEntityID, iMaxCommitedEntry, iFlag);
+        iRet = m_poDBEngine->GetEntityMeta(iEntityID, iMaxCommitedEntry, iFlag);
         if ((iRet != 0 && iRet != eRetCodeNotFound) || iFlag != 0)
         {
-            CertainLogError("iEntityID %lu LoadMaxCommitedEntry iFlag %u ret %d",
+            CertainLogError("iEntityID %lu GetEntityMeta iFlag %u ret %d",
                     iEntityID, iFlag, iRet); 
             if (iFlag == 0)
             {
@@ -242,7 +242,7 @@ int clsCertainWrapper::Init(clsCertainUserBase *poCertainUser,
     m_poDBEngine = poDBEngine;
     m_poConf = poConf;
 
-    AssertEqual(CERTAIN_IO_BUFFER_SIZE, 2 * MAX_WRITEBATCH_SIZE + 2000);
+    assert(CERTAIN_IO_BUFFER_SIZE == 2 * (MAX_WRITEBATCH_SIZE + 1000));
 
     OSS::SetCertainOSSIDKey(m_poConf->GetOSSIDKey());
 
@@ -588,6 +588,14 @@ int clsCertainWrapper::RunPaxos(uint64_t iEntityID, uint64_t iEntry,
         return eRetCodeRejectAll;
     }
 
+    for (uint32_t i = 0; i < vecWBUUID.size(); ++i)
+    {
+        if (clsUUIDGroupMng::GetInstance()->IsUUIDExist(iEntityID, vecWBUUID[i]))
+        {
+            return eRetCodeDupUUID;
+        }
+    }
+
     // It's estimated One uint64_t uuid is 32 bytes in pb conservatively.
     if (strWriteBatch.size() + vecWBUUID.size() * 32 > MAX_WRITEBATCH_SIZE)
     {
@@ -810,6 +818,35 @@ int clsCertainWrapper::EvictEntity(uint64_t iEntityID)
     return iRet;
 }
 
+bool clsCertainWrapper::CheckIfEntryDeletable(uint64_t iEntityID,
+        uint64_t iEntry, uint64_t iTimestampMS)
+{
+    uint64_t iCurrTimeMS = GetCurrTimeMS();
+    if (iCurrTimeMS < iTimestampMS + m_poConf->GetPLogExpireTimeMS())
+    {
+        return false;
+    }
+
+    uint64_t iMaxCommitedEntry = 0;
+    uint32_t iFlag = 0;
+    int iRet = m_poDBEngine->GetEntityMeta(iEntityID, iMaxCommitedEntry, iFlag);
+    if (iRet != 0)
+    {
+        CertainLogError("GetEntityMeta iEntityID %lu ret %d", iEntityID, iRet);
+        return false;
+    }
+
+    if (iMaxCommitedEntry < iEntry)
+    {
+        return false;
+    }
+
+    CertainLogInfo("E(%lu, %lu) iMaxCommitedEntry %lu",
+            iEntityID, iEntry, iMaxCommitedEntry);
+
+    return true;
+}
+
 void clsCertainWrapper::Run()
 {
     int iRet = StartWorkers();
@@ -819,10 +856,8 @@ void clsCertainWrapper::Run()
         Assert(false);
     }
 
-    CertainLogImpt("CERTAIN_SIMPLE_EXAMPLE %d, %lu workers started.",
-            CERTAIN_SIMPLE_EXAMPLE, m_vecWorker.size());
-    printf("CERTAIN_SIMPLE_EXAMPLE %d, %lu workers started.\n",
-            CERTAIN_SIMPLE_EXAMPLE, m_vecWorker.size());
+    CertainLogImpt("%lu workers started.", m_vecWorker.size());
+    printf("%lu workers started.\n", m_vecWorker.size());
 
     m_poCertainUser->OnReady();
 

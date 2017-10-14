@@ -331,6 +331,7 @@ int clsConnWorker::AcceptOneFD(clsListenContext *poContext)
     }
     else
     {
+        // (TODO)rock: remove
         iRet = clsConnInfoMng::GetInstance()->PutByOneThread(
                 INVALID_SERVER_ID, tConnInfo);
         if (iRet != 0)
@@ -449,17 +450,6 @@ int clsConnWorker::AddAllListen()
         CertainLogError("AddListen ret %d", iRet);
         return -1;
     }
-
-#if CERTAIN_SIMPLE_EXAMPLE
-    InetAddr_t tExteranl = m_poConf->GetExtAddr();
-
-    iRet = AddListen(false, tExteranl);
-    if (iRet != 0)
-    {
-        CertainLogError("AddListen ret %d", iRet);
-        return -2;
-    }
-#endif
 
     return 0;
 }

@@ -28,8 +28,10 @@ int clsAsyncPipeMng::Init(clsConfigure *poConf)
         m_aiEntityIDMap[i] = INVALID_ENTITY_ID;
     }
 
-    m_iMaxGroupLimit = clsCertainWrapper::GetInstance()->GetCertainUser()->GetControlGroupLimit();
-    CertainLogZero("MAX_ASYNC_PIPE_NUM %u m_iMaxGroupLimit %u", MAX_ASYNC_PIPE_NUM, m_iMaxGroupLimit);
+    m_poCertain = clsCertainWrapper::GetInstance();
+    m_iMaxGroupLimit = m_poCertain->GetCertainUser()->GetControlGroupLimit();
+    CertainLogZero("MAX_ASYNC_PIPE_NUM %u m_iMaxGroupLimit %u",
+            MAX_ASYNC_PIPE_NUM, m_iMaxGroupLimit);
 
     return 0;
 }
@@ -43,7 +45,7 @@ int clsAsyncPipeMng::GetIdlePipeIdx(uint32_t &iIdx, uint64_t iEntityID)
 {
     clsThreadLock oLock(&m_oMutex);
 
-    int iGroupID = clsCertainWrapper::GetInstance()->GetCertainUser()->GetControlGroupID(iEntityID);
+    int iGroupID = m_poCertain->GetCertainUser()->GetControlGroupID(iEntityID);
     if (iGroupID != -1 && m_aiGroupCnt[iGroupID] >= m_iMaxGroupLimit)
     {
         return eRetCodeNoGroupIdlePipe;
@@ -76,7 +78,7 @@ void clsAsyncPipeMng::PutIdlePipeIdx(uint32_t iIdx)
     if (iEntityID != INVALID_ENTITY_ID)
     {
         m_aiEntityIDMap[iIdx] = INVALID_ENTITY_ID;
-        int iGroupID = clsCertainWrapper::GetInstance()->GetCertainUser()->GetControlGroupID(iEntityID);
+        int iGroupID = m_poCertain->GetCertainUser()->GetControlGroupID(iEntityID);
         assert(iGroupID != -1);
         assert(m_aiGroupCnt[iGroupID] > 0);
         m_aiGroupCnt[iGroupID]--;

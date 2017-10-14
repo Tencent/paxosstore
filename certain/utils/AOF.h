@@ -9,6 +9,7 @@ namespace Certain
 {
 
 // A single file appended only by multi-thread.
+// This is a handy simple tool for dump sth in test.
 class clsAppendOnlyFile
 {
 private:

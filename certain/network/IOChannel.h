@@ -6,7 +6,7 @@
 namespace Certain
 {
 
-#define CERTAIN_IO_BUFFER_SIZE  (42 << 20) // 42MB == 2 * MAX_WRITEBATCH_SIZE + 2MB
+#define CERTAIN_IO_BUFFER_SIZE  (40 << 20) // 40MB == 2 * (MAX_WRITEBATCH_SIZE + 1000)
 
 class clsIOChannel : public clsFDBase
 {
