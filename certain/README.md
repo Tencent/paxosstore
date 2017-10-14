@@ -23,7 +23,7 @@ The example is a simple card server with full neccesary functions implemetation,
     
     Use card_tool to do some operations, like Insert/Delete/Update/Select.
     
-    $ ./card_tool                                
+    $ ./card_tool
         ./CardTool -X/-Y/-Z addr -o Insert -i <card_id> -n <user_name> -u <user_id> -b <balance>
         ./CardTool -X/-Y/-Z addr -o Update -i <card_id> -d <delta>
         ./CardTool -X/-Y/-Z addr -o Delete -i <card_id>
@@ -33,16 +33,16 @@ The example is a simple card server with full neccesary functions implemetation,
     $ ./card_tool -X 127.0.0.1:50050 -o Insert -i 12358 -n rock -u 20170001 -b 200
         Failure with error: code(8002) msg(card exists)
         
-    $ ./card_tool -X 127.0.0.1:50050 -o Select -i 12358                                 
+    $ ./card_tool -X 127.0.0.1:50050 -o Select -i 12358
         user_name=rock user_id=20170001 balance=200
         Done
         
-    $ ./card_tool -X 127.0.0.1:50050 -o Update -i 12358 -d 10                           
+    $ ./card_tool -X 127.0.0.1:50050 -o Update -i 12358 -d 10
         balance=210
         Done
         
-    $ ./card_tool -X 127.0.0.1:50050 -o Delete -i 12358            
+    $ ./card_tool -X 127.0.0.1:50050 -o Delete -i 12358
         Done
         
-    $ ./card_tool -X 127.0.0.1:50050 -o Select -i 12358      
+    $ ./card_tool -X 127.0.0.1:50050 -o Select -i 12358
         Failure with error: code(8001) msg(card not exist)
