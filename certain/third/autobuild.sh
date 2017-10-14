@@ -5,7 +5,7 @@ if test ! -e protobuf/src/.libs/libprotobuf.a; then
 fi
 
 if test ! -e rocksdb/librocksdb.a; then
-    cd rocksdb; make -j 4; cd ..;
+    cd rocksdb; make -j 4 static_lib; cd ..;
 fi
 
 if test ! -e libco/lib/libcolib.a; then

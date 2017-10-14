@@ -1,6 +1,10 @@
 *.o
 *.a
 *.so
+*.pb.h
+*.pb.cc
 
-Certain.pb.cc
-Certain.pb.h
+bench_tool
+card_srv
+card_tool
+db_tool
