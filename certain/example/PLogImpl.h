@@ -31,6 +31,7 @@ public:
 
 class clsPLogComparator : public dbtype::Comparator
 {
+public:
     virtual int Compare(const dbtype::Slice& a, const dbtype::Slice& b) const
     {
         assert(a.size() >= 8 && b.size() >= 8);

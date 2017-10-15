@@ -52,8 +52,7 @@ SLIBS = $(PROTOBUF_PATH)/.libs/libprotobuf.a $(COLIB_PATH)/lib/libcolib.a \
         $(GRPC_PATH)/libs/opt/libgrpc_plugin_support.a \
         $(GRPC_PATH)/libs/opt/libgrpc_unsecure.a \
         $(GRPC_PATH)/libs/opt/libgrpc++_unsecure.a \
-        $(GRPC_PATH)/libs/opt/libz.a \
-        -Wl,--no-as-needed $(GRPC_PATH)/libs/opt/libgrpc++_reflection.a -Wl,--as-needed
+        $(GRPC_PATH)/libs/opt/libz.a
 
 #-----------------------------------------------
 
