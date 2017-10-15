@@ -61,8 +61,6 @@ public:
             clsDBBase *poDBEngine, clsConfigure *poConf);
     void Destroy();
 
-    void Run();
-
     virtual ~clsCertainWrapper() { }
 
     bool CheckIfAllWorkerExited();
@@ -79,10 +77,9 @@ public:
 
     int EntityCatchUp(uint64_t iEntityID, uint64_t &iMaxCommitedEntry);
 
-    int GetMaxChosenEntry(uint64_t iEntityID, uint64_t &iMaxChosenEntry);
-
     int GetEntityInfo(uint64_t iEntityID, EntityInfo_t &tEntityInfo, EntityMeta_t &tMeta);
 
+    clsConfigure *GetConf() { return m_poConf; }
     clsPLogBase *GetPLogEngine() { return m_poPLogEngine; }
     clsDBBase *GetDBEngine() { return m_poDBEngine; }
     clsCertainUserBase *GetCertainUser() { return m_poCertainUser; }
@@ -93,7 +90,7 @@ public:
 
     bool CheckIfEntryDeletable(uint64_t iEntityID, uint64_t iEntry, uint64_t iTimestampMS);
 
-    clsConfigure *GetConf();
+    void Run();
 };
 
 } // namespace Certian

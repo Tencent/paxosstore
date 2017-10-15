@@ -225,12 +225,6 @@ int clsCertainWrapper::CatchUpAndRunPaxos(uint64_t iEntityID,
     return iRet;
 }
 
-clsConfigure *clsCertainWrapper::GetConf()
-{
-    Assert(m_poConf != NULL);
-    return m_poConf;
-}
-
 // Abort if return error.
 int clsCertainWrapper::Init(clsCertainUserBase *poCertainUser,
         clsPLogBase *poPLogEngine, clsDBBase *poDBEngine, clsConfigure *poConf)
@@ -284,20 +278,20 @@ int clsCertainWrapper::Init(clsCertainUserBase *poCertainUser,
     if (iRet != 0)
     {
         CertainLogFatal("clsIOWorkerRouter::Init ret %d", iRet);
-        return -11;
+        return -7;
     }
 
     iRet = InitManagers();
     if (iRet != 0)
     {
-        return -7;
+        return -8;
     }
 
     iRet = clsCmdFactory::GetInstance()->Init(m_poConf);
     if (iRet != 0)
     {
         CertainLogFatal("clsCmdFactory::GetInstance()->Init ret %d", iRet);
-        return -8;
+        return -9;
     }
 
     clsPLogBase::InitUseTimeStat();
@@ -307,14 +301,14 @@ int clsCertainWrapper::Init(clsCertainUserBase *poCertainUser,
     if (iRet != 0)
     {
         CertainLogFatal("InitWorkers ret %d", iRet);
-        return -9;
+        return -10;
     }
 
     iRet = clsCatchUpWorker::GetInstance()->Init(m_poConf, m_poCertainUser);
     if (iRet != 0)
     {
         CertainLogFatal("clsCatchUpWorker::GetInstance()->Init ret %d", iRet);
-        return -10;
+        return -11;
     }
 
     m_vecWorker.push_back(clsCatchUpWorker::GetInstance());
@@ -790,13 +784,6 @@ void clsCertainWrapper::DestroyWorkers()
         delete *riter, *riter = NULL;
     }
     m_vecWorker.clear();
-}
-
-int clsCertainWrapper::GetMaxChosenEntry(uint64_t iEntityID,
-        uint64_t &iMaxChosenEntry)
-{
-    Assert(false);
-    return 0;
 }
 
 int clsCertainWrapper::EvictEntity(uint64_t iEntityID)

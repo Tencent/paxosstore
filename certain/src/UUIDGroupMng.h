@@ -23,13 +23,10 @@ public:
         m_poLRUTable = new clsLRUTable<uint64_t, uint32_t>(MAX_UUID_NUM);
     }
 
-    // compatible with gperftools
-#if 0
     ~clsUUIDGroup()
     {
         delete m_poLRUTable;
     }
-#endif
 
     size_t Size();
 
@@ -42,7 +39,6 @@ class clsUUIDGroupMng : public clsSingleton<clsUUIDGroupMng>
 private:
     clsUUIDGroup aoGroup[UUID_GROUP_NUM];
 
-    // compatible with gperftools
     friend class clsSingleton<clsUUIDGroupMng>;
     clsUUIDGroupMng() { }
 

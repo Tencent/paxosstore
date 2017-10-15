@@ -14,8 +14,7 @@ private:
 
 public:
     clsSingleton() { }
-    // compatible with gperftools
-    //virtual ~clsSingleton() { }
+    virtual ~clsSingleton() { }
 
     static Type *GetInstance()
     {
