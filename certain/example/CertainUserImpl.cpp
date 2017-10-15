@@ -1,29 +1,28 @@
 #include "CertainUserImpl.h"
 
-const uint16_t clsCertainUserImpl::kPort = 50051;
-
 int clsCertainUserImpl::GetLocalAcceptorID(uint64_t iEntityID,
-		uint32_t &iLocalAcceptorID)
+        uint32_t &iLocalAcceptorID)
 {
-	assert(m_poConf != NULL);
-	iLocalAcceptorID = m_poConf->GetLocalServerID();
-	return 0;
+    assert(m_poConf != NULL);
+    iLocalAcceptorID = m_poConf->GetLocalServerID();
+    return 0;
 }
 
 int clsCertainUserImpl::GetServerID(uint64_t iEntityID,
-		uint32_t iAcceptorID, uint32_t &iServerID)
+        uint32_t iAcceptorID, uint32_t &iServerID)
 {
-	assert(m_poConf != NULL);
-	iServerID = iAcceptorID;
-	return 0;
+    assert(m_poConf != NULL);
+    iServerID = iAcceptorID;
+    return 0;
 }
 
 int clsCertainUserImpl::InitServerAddr(Certain::clsConfigure *poConf)
 {
-	poConf->SetServerNum(poConf->GetServerAddrs().size());
-	poConf->SetAcceptorNum(poConf->GetServerAddrs().size());
-	m_poConf = poConf;
-	return 0;
+    poConf->SetServerNum(poConf->GetServerAddrs().size());
+    poConf->SetAcceptorNum(poConf->GetServerAddrs().size());
+    m_poConf = poConf;
+    m_hPort = 50050 + m_poConf->GetLocalServerID();
+    return 0;
 }
 
 int clsCertainUserImpl::GetSvrAddr(uint64_t iEntityID, uint32_t iAcceptorID, Certain::InetAddr_t & tAddr)

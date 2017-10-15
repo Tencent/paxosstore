@@ -1,8 +1,7 @@
 #include "example/ServiceImpl.h"
-#include "example/CertainUserImpl.h"
+#include "CertainUserImpl.h"
 #include "example/DBImpl.h"
 #include "example/PLogImpl.h"
-
 #include "grpc/src/core/lib/support/env.h"
 
 using namespace Certain;
@@ -85,7 +84,9 @@ int main(int argc, char** argv)
     // New Workers.
     clsServiceImpl oImpl;
     clsServerWorkerMng *poMng = clsServerWorkerMng::GetInstance();
-    poMng->Init(string("0.0.0.0:50051"), iWorkerNum, iCallDataNumPerWorker, &oImpl);
+    string strAddr = "0.0.0.0:" + to_string(dynamic_cast<clsCertainUserImpl*>(
+                poWrapper->GetCertainUser())->GetServicePort());
+    poMng->Init(strAddr, iWorkerNum, iCallDataNumPerWorker, &oImpl);
 
     // Register interfaces here.
     REGISTER_INTERFACE(example, CardServer, Echo);

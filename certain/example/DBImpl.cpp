@@ -260,7 +260,7 @@ int clsDBImpl::GetAllAndSet(uint64_t iEntityID, uint32_t iAcceptorID, uint64_t &
         // Step 4: Gets commited entry and sets local value.
 
         string strAddr = (string)sIP + ":" + 
-            to_string(dynamic_cast<clsCertainUserImpl*>(pCertainUser)->kPort);
+            to_string(dynamic_cast<clsCertainUserImpl*>(pCertainUser)->GetServicePort());
 
         example::GetRequest oRequest;
         oRequest.set_entity_id(iEntityID);
