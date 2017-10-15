@@ -13,7 +13,7 @@ install:
 
 script:
 # For certain.
-    - cd certain; sh build.sh; cd ..;
+    - cd certain; sh build.sh libcertain.a; cd ..;
 # For paxoskv.
     - cd paxoskv
     - mkdir build
