@@ -6,11 +6,11 @@ Certain is an asynchronous implementation of paxos log, but using in synchronous
 
 The example is a simple card server with full neccesary functions implemetation, such as routing, failover, getall and plog expiring. It's based on gRPC, which allows you to access by clients of different language easily.
 
-    $ sh autobuild.sh
+    $ sh autobuild.sh example
 
 # Have a try on the example
     
-    Make a directory for the servers first.
+    Make a directory for the servers first, for example:
     
     $ mkdir /home/rockzheng/certain
     
@@ -46,3 +46,15 @@ The example is a simple card server with full neccesary functions implemetation,
         
     $ ./card_tool -X 127.0.0.1:50050 -o Select -i 12358
         Failure with error: code(8001) msg(card not exist)
+        
+    Trigger GetAll/CatchUp when data is lost.
+        
+    $ ./card_tool -X 127.0.0.1:50050 -o Insert -i 12358 -n rock -u 20170001 -b 200
+        Failure with error: code(8002) msg(card exists)
+        
+    $ rm /home/rockzheng/certain/datadb_0 -rf
+    $ rm /home/rockzheng/certain/logdb_0 -rf
+        
+    $ ./card_tool -X 127.0.0.1:50050 -o Select -i 12358
+        user_name=rock user_id=20170001 balance=200
+        Done
