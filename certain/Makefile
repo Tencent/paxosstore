@@ -5,9 +5,9 @@
 CERTAIN_DEBUG = 0
 
 CERTAIN_PATH=./
-CERTAIN_TOOLS_PATH=$(CERTAIN_PATH)/tools
 CERTAIN_EXAMPLE_PATH=$(CERTAIN_PATH)/example
 CERTAIN_UTILS_PATH=$(CERTAIN_PATH)/utils
+CERTAIN_SRC_PATH=$(CERTAIN_PATH)/src
 
 THIRD_PATH = ./third
 PROTOBUF_PATH = ./third/protobuf/src
@@ -52,12 +52,12 @@ SLIBS = $(PROTOBUF_PATH)/.libs/libprotobuf.a $(COLIB_PATH)/lib/libcolib.a \
         $(GRPC_PATH)/libs/opt/libgrpc_plugin_support.a \
         $(GRPC_PATH)/libs/opt/libgrpc_unsecure.a \
         $(GRPC_PATH)/libs/opt/libgrpc++_unsecure.a \
-        $(GRPC_PATH)/libs/opt/libz.a
+        $(GRPC_PATH)/libs/opt/libz.a \
+        -Wl,--no-as-needed $(GRPC_PATH)/libs/opt/libgrpc++_reflection.a -Wl,--as-needed
 
 #-----------------------------------------------
 
-CERTAIN_TOOLS = stress_tool
-CERTAIN_EXAMPLE = card_srv card_tool db_tool bench_tool
+CERTAIN_EXAMPLE = card_srv card_tool db_tool bench_tool rw_stress_tool
 CERTAIN_LIBS = libcertain.a
 
 CERTAIN_OBJS = 	src/Certain.pb.o \
@@ -73,7 +73,6 @@ CERTAIN_OBJS = 	src/Certain.pb.o \
 				network/IOChannel.o \
 				src/AsyncQueueMng.o \
 				src/Configure.o \
-				src/PerfLog.o \
 				src/Command.o \
 				src/EntryState.o \
 				src/EntityInfoMng.o \
@@ -91,7 +90,6 @@ CERTAIN_OBJS = 	src/Certain.pb.o \
 
 default: $(CERTAIN_LIBS)
 example: $(CERTAIN_LIBS) $(CERTAIN_EXAMPLE)
-tools: $(CERTAIN_TOOLS)
 
 %.grpc.pb.cc: %.proto
 	$(PROTOBUF_PATH)/protoc --grpc_out=./ --plugin=protoc-gen-grpc=$(GRPC_PATH)/bins/opt/grpc_cpp_plugin $^
@@ -127,7 +125,9 @@ CERTAIN_EXAMPLE_OBJS = 	$(CERTAIN_EXAMPLE_PATH)/example.pb.o \
 					  	$(CERTAIN_EXAMPLE_PATH)/CertainUserImpl.o \
 						$(CERTAIN_EXAMPLE_PATH)/UserWorker.o \
 						$(CERTAIN_EXAMPLE_PATH)/ServiceImpl.o \
-						$(CERTAIN_EXAMPLE_PATH)/UUIDGenerator.o
+						$(CERTAIN_EXAMPLE_PATH)/UUIDGenerator.o \
+						$(CERTAIN_EXAMPLE_PATH)/TemporaryTable.o \
+						$(CERTAIN_EXAMPLE_PATH)/CoHashLock.o
 
 example/example.pb.cc: example/example.proto
 	$(PROTOBUF_PATH)/protoc --cpp_out=./ example/example.proto
@@ -144,6 +144,9 @@ db_tool: $(CERTAIN_EXAMPLE_OBJS) example/DBTool.o libcertain.a
 bench_tool: $(CERTAIN_EXAMPLE_OBJS) example/BenchTool.o libcertain.a
 	$(BUILD_EXEC)
 
+rw_stress_tool: $(CERTAIN_EXAMPLE_OBJS) example/RWStressTool.o libcertain.a
+	$(BUILD_EXEC)
+
 BUILD_EXAMPLE_TEST_EXEC=$(GXX) $(BUILDFLAGS) $^ -o $@ $(GTEST_PATH)/libgtest.a $(SLIBS) $(DLIBS)
 
 example/tests/%Test: example/tests/%Test.o $(CERTAIN_EXAMPLE_OBJS) libcertain.a
@@ -152,7 +155,9 @@ example/tests/%Test: example/tests/%Test.o $(CERTAIN_EXAMPLE_OBJS) libcertain.a
 CERTAIN_EXAMPLE_TESTS = example/tests/CodingTest \
 						example/tests/DBImplTest \
 						example/tests/PLogImplTest \
-						example/tests/UUIDGeneratorTest
+						example/tests/UUIDGeneratorTest \
+						example/tests/CoHashLockTest \
+						example/tests/TemporaryTableTest
 
 example_tests: $(CERTAIN_EXAMPLE_TESTS)
 
@@ -171,10 +176,23 @@ CERTAIN_UTILS_TESTS = utils/tests/ArrayTimerTest \
 utils_tests: $(CERTAIN_UTILS_TESTS)
 
 #-----------------------------------------------
+# For src_test.
+
+src/tests/%Test: src/tests/%Test.o libcertain.a
+	$(BUILD_SRC_TEST_EXEC)
+
+BUILD_SRC_TEST_EXEC=$(GXX) $(BUILDFLAGS) $^ -o $@ $(GTEST_PATH)/libgtest.a $(SLIBS) $(DLIBS)
+
+CERTAIN_SRC_TESTS = src/tests/LeasePolicyTest
+
+src_tests: $(CERTAIN_SRC_TESTS)
+
+#-----------------------------------------------
 
 clean:
-	rm src/*.pb.* src/*.o tools/*.o network/*.o example/*.pb.* -rf; \
+	rm src/*.pb.* src/*.o network/*.o example/*.pb.* -rf; \
     rm $(CERTAIN_EXAMPLE_TESTS) $(CERTAIN_EXAMPLE_PATH)/*.o $(CERTAIN_EXAMPLE_PATH)/tests/*.o -rf; \
 	rm $(CERTAIN_UTILS_TESTS) $(CERTAIN_UTILS_PATH)/*.o $(CERTAIN_UTILS_PATH)/tests/*.o -rf; \
-    rm $(CERTAIN_TOOLS) $(CERTAIN_EXAMPLE) $(CERTAIN_LIBS) -rf;
+	rm $(CERTAIN_SRC_TESTS) $(CERTAIN_SRC_PATH)/*.o $(CERTAIN_SRC_PATH)/tests/*.o -rf; \
+    rm $(CERTAIN_EXAMPLE) $(CERTAIN_LIBS) -rf;
 

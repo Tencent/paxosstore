@@ -1,11 +1,6 @@
 #pragma once
-#include "Command.h"
-#include "Certain.h"
-// db
-#include "db.h"
+#include "certain/Certain.h"
 #include "DBType.h"
-
-using namespace Certain;
 
 class clsSnapshotWrapper 
 {
@@ -41,23 +36,18 @@ private:
 
     dbtype::DB *m_poLevelDB;
 
-    pthread_mutex_t *m_poSnapshotMapMutex;
+    Certain::clsMutex m_poSnapshotMapMutex;
     // timestmp -> (sequence, snapshot)
-	std::map<uint32_t, std::pair<uint64_t, std::shared_ptr<clsSnapshotWrapper>>> *m_poSnapshotMap;
+	std::map<uint32_t, std::pair<uint64_t, std::shared_ptr<clsSnapshotWrapper>>> m_poSnapshotMap;
 
 public:
-    clsDBImpl(dbtype::DB *poLevelDB, 
-            pthread_mutex_t* poSnapshotMapMutex = NULL,
-            std::map<uint32_t, std::pair<uint64_t, std::shared_ptr<clsSnapshotWrapper>>> *poSnapshotMap = NULL) 
-        : m_poLevelDB(poLevelDB),
-          m_poSnapshotMapMutex(poSnapshotMapMutex),
-          m_poSnapshotMap(poSnapshotMap) { }
+    clsDBImpl(dbtype::DB *poLevelDB) : m_poLevelDB(poLevelDB) {}
 
     virtual ~clsDBImpl() { }
 
-    virtual int Commit(uint64_t iEntityID, uint64_t iEntry, const string &strWriteBatch);
+    virtual int Commit(uint64_t iEntityID, uint64_t iEntry, const std::string &strWriteBatch);
 
-    virtual int MultiCommit(vector<Certain::EntryValue_t> vecEntryValue)
+    virtual int MultiCommit(std::vector<Certain::EntryValue_t> vecEntryValue)
     {
         return -1;
     }
@@ -73,19 +63,13 @@ public:
     int SetEntityMeta(uint64_t iEntityID, uint64_t iMaxCommitedEntry,
                       uint32_t iFlag = uint32_t(-1));
 
-    int Put(const string &strKey, const string &strValue, string* strWriteBatch = NULL);
-
     int MultiPut(dbtype::WriteBatch* oWB);
 
-    int Get(const string &strKey, string &strValue, const dbtype::Snapshot* poSnapshot = NULL);
-
-    int Delete(const string &strKey, string* strWriteBatch = NULL);
-
-    int GetBatch(uint64_t iEntityID, string& strNextKey, string* strWriteBatch,
+    int GetBatch(uint64_t iEntityID, std::string& strNextKey, std::string* strWriteBatch,
             const dbtype::Snapshot* poSnapshot,
             uint32_t iMaxSize = 1024 * 1024);
 
-    int Clear(uint64_t iEntityID, string& strNextKey, uint32_t iMaxIterateKeyCnt = 1000);
+    int Clear(uint64_t iEntityID, std::string& strNextKey, uint32_t iMaxIterateKeyCnt = 1000);
 
     int InsertSnapshot(uint64_t& iSequenceNumber, const dbtype::Snapshot* poSnapshot);
 
@@ -95,5 +79,7 @@ public:
 
     // Used by clsDBImplTest.
     uint64_t GetSnapshotSize();
+
+    dbtype::DB *GetDB();
 };
 

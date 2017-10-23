@@ -5,9 +5,8 @@
 
 #include "example.grpc.pb.h"
 #include "example/Client.h"
+#include "example/Coding.h"
 #include "example/UUIDGenerator.h"
-
-using namespace std;
 
 void PrintUsage()
 {
@@ -18,7 +17,7 @@ void PrintUsage()
     printf("./CardTool -a       addr -o Recover -i <card_id>\n");
 }
 
-grpc::Status Run(const string& strAddr, const string& strOper, 
+grpc::Status Run(const std::string& strAddr, const std::string& strOper, 
         example::CardRequest& oRequest, example::CardResponse& oResponse,
         std::vector<std::string>* poIPList) 
 {
@@ -33,22 +32,26 @@ grpc::Status Run(const string& strAddr, const string& strOper,
     switch (strOper[0])
     {
         case 'I':
+            oRequest.set_entity_id(GetEntityID(oRequest.card_id()));
             oRequest.mutable_card_info()->set_last_modified_time(time(0));
-            oStatus = oClient.Call(oRequest.card_id(), example::eInsertCard, &oRequest, &oResponse);
+            oStatus = oClient.Call(oRequest.entity_id(), example::eInsertCard, &oRequest, &oResponse);
             break;
         case 'U':
+            oRequest.set_entity_id(GetEntityID(oRequest.card_id()));
             oRequest.mutable_card_info()->set_last_modified_time(time(0));
-            oStatus = oClient.Call(oRequest.card_id(), example::eUpdateCard, &oRequest, &oResponse);
+            oStatus = oClient.Call(oRequest.entity_id(), example::eUpdateCard, &oRequest, &oResponse);
             if (oStatus.error_code() == 0)
             {
                 printf("balance=%lu\n", oResponse.card_info().balance());
             }
             break;
         case 'D':
-            oStatus = oClient.Call(oRequest.card_id(), example::eDeleteCard, &oRequest, &oResponse);
+            oRequest.set_entity_id(GetEntityID(oRequest.card_id()));
+            oStatus = oClient.Call(oRequest.entity_id(), example::eDeleteCard, &oRequest, &oResponse);
             break;
         case 'S':
-            oStatus = oClient.Call(oRequest.card_id(), example::eSelectCard, &oRequest, &oResponse);
+            oRequest.set_entity_id(GetEntityID(oRequest.card_id()));
+            oStatus = oClient.Call(oRequest.entity_id(), example::eSelectCard, &oRequest, &oResponse);
             if (oStatus.error_code() == 0)
             {
                 printf("user_name=%s user_id=%lu balance=%lu\n", 
@@ -57,7 +60,7 @@ grpc::Status Run(const string& strAddr, const string& strOper,
             }
             break;
         case 'R':
-            oGetRequest.set_entity_id(oRequest.card_id());
+            oGetRequest.set_entity_id(GetEntityID(oRequest.card_id()));
             oStatus = oGetClient.Call(oGetRequest.entity_id(), example::eRecoverData, 
                     &oGetRequest, &oGetResponse, strAddr);
             break;
@@ -77,8 +80,8 @@ int main(int argc, char** argv)
         exit(-1);
     }
 
-    string strOper;
-    string strAddr;
+    std::string strOper;
+    std::string strAddr;
 
     example::CardRequest oRequest;
     example::CardResponse oResponse;
@@ -130,7 +133,7 @@ int main(int argc, char** argv)
 
     oRequest.set_uuid(clsUUIDGenerator::GetInstance()->GetUUID());
 
-    map<int, string> tErrMsgMap;
+    std::map<int, std::string> tErrMsgMap;
     tErrMsgMap[example::StatusCode::eCardBalanceNotEnough] = "card balance not enough";
     tErrMsgMap[example::StatusCode::eCardNotExist] = "card not exist";
     tErrMsgMap[example::StatusCode::eCardExist] = "card exists";
@@ -143,7 +146,7 @@ int main(int argc, char** argv)
     else
     {
         int iCode = oRet.error_code();
-        string strMsg = oRet.error_message();
+        std::string strMsg = oRet.error_message();
         if (tErrMsgMap.find(iCode)!= tErrMsgMap.end())
         {
             strMsg = tErrMsgMap[oRet.error_code()];

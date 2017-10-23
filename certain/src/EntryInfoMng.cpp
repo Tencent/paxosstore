@@ -74,7 +74,7 @@ EntryInfo_t *clsEntryInfoMng::CreateEntryInfo(EntityInfo_t *ptEntityInfo,
 
     ptInfo->poMachine = new clsEntryStateMachine;
 
-    ptInfo->iActiveAcceptorID = INVALID_ACCEPTOR_ID;
+    ptInfo->iInteractCnt = 0;
 
     assert(ptEntityInfo != NULL);
     ptInfo->ptEntityInfo = ptEntityInfo;

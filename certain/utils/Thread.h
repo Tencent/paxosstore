@@ -70,6 +70,18 @@ public:
         AssertEqual(pthread_mutex_unlock(&tMutex), 0);
     }
 
+    bool TryLock()
+    {
+        // In routine enviroment, it's normal to get EDEADLK.
+        int iRet = pthread_mutex_trylock(&tMutex);
+        if (iRet == EBUSY || iRet == EDEADLK)
+        {
+            return false;
+        }
+        AssertEqual(iRet, 0);
+        return true;
+    }
+
 private:
     pthread_mutex_t tMutex;
 

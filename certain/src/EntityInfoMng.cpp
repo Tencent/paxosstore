@@ -1,4 +1,4 @@
-#include "Certain.h"
+#include "certain/Certain.h"
 #include "EntityInfoMng.h"
 #include "EntryState.h"
 
@@ -267,9 +267,10 @@ clsEntityInfoMng::clsEntityInfoMng(clsConfigure *poConf,
 
     EntityInfo_t *ptEntityInfo = NULL;
 
-    if (m_poConf->GetMaxEntityBitNum() <= 20)
+    if (MAX_SMALL_ENTITY_NUM != 0
+            && m_poConf->GetMaxEntityNum() <= MAX_SMALL_ENTITY_NUM)
     {
-        m_iMaxEntityNum = ENTITY_NUM;
+        m_iMaxEntityNum = m_poConf->GetMaxEntityNum();
 
         m_poEntityInfoTable = new clsSmallEntityInfoTable(m_iMaxEntityNum, m_iAcceptorNum);
 
@@ -333,6 +334,9 @@ EntityInfo_t *clsEntityInfoMng::CreateEntityInfo(uint64_t iEntityID)
 
     ptEntityInfo->apWaitingMsg = (clsPaxosCmd**)calloc(m_iAcceptorNum, sizeof(clsPaxosCmd*));
     AssertNotEqual(ptEntityInfo->apWaitingMsg, NULL);
+
+    ptEntityInfo->poLeasePolicy = new clsLeasePolicy(
+            iLocalAcceptorID, m_poConf->GetLeaseDurationMS());
 
     ptEntityInfo->iEntityID = iEntityID;
     ptEntityInfo->iMaxPLogEntry = INVALID_ENTRY;
@@ -399,6 +403,8 @@ void clsEntityInfoMng::DestroyEntityInfo(EntityInfo_t *ptEntityInfo)
         clsThreadWriteLock oWriteLock(&m_oRWLock);
         m_poEntityInfoTable->Remove(ptEntityInfo->iEntityID);
     }
+
+    delete ptEntityInfo->poLeasePolicy, ptEntityInfo->poLeasePolicy = NULL;
 
     free(ptEntityInfo->apWaitingMsg), ptEntityInfo->apWaitingMsg = NULL;
     free(ptEntityInfo), ptEntityInfo = NULL;
@@ -482,7 +488,7 @@ int clsEntityInfoMng::GetMaxChosenEntry(uint64_t iEntityID,
 {
     int32_t iRefCount = 0;
     EntityInfo_t *ptEntityInfo = NULL;
-    uint64_t iLeaseExpiredTimeMS = 0;
+    iLeaseTimeoutMS = 0;
 
     {
         clsThreadReadLock oReadLock(&m_oRWLock);
@@ -498,20 +504,13 @@ int clsEntityInfoMng::GetMaxChosenEntry(uint64_t iEntityID,
             iRefCount = ptEntityInfo->iRefCount;
             iMaxContChosenEntry = ptEntityInfo->iMaxContChosenEntry;
             iMaxChosenEntry = ptEntityInfo->iMaxChosenEntry;
-            iLeaseExpiredTimeMS = ptEntityInfo->iLeaseExpiredTimeMS;
+            iLeaseTimeoutMS = ptEntityInfo->poLeasePolicy->GetLeaseTimeoutMS();
         }
     }
 
-    iLeaseTimeoutMS = 0;
-
-    if (iLeaseExpiredTimeMS > 0)
+    if (iLeaseTimeoutMS == clsLeasePolicy::kUnlimitedMS)
     {
-        uint64_t iCurrTimeMS = GetCurrTimeMS();
-
-        if (iLeaseExpiredTimeMS > iCurrTimeMS)
-        {
-            iLeaseTimeoutMS = iLeaseExpiredTimeMS - iCurrTimeMS;
-        }
+        return eRetCodeLeaseReject;
     }
 
     // All entrys of the entity may eliminated, recover it.
@@ -581,50 +580,6 @@ bool clsEntityInfoMng::CheckAndEliminate()
     CertainLogInfo("ptEntityInfo->iRefCount %d", ptEntityInfo->iRefCount);
 
     return false;
-}
-
-void clsEntityInfoMng::UpdateSuggestedLease(EntityInfo_t *ptEntityInfo)
-{
-    if (ptEntityInfo->iLocalAcceptorID == 0)
-    {
-        if (m_poConf->GetMaxLeaseMS() > 0)
-        {
-            ptEntityInfo->iLeaseExpiredTimeMS = GetCurrTimeMS()
-                + m_poConf->GetMaxLeaseMS();
-
-            CertainLogInfo("Add MaxLease %u iEntityID %lu",
-                    m_poConf->GetMaxLeaseMS(), ptEntityInfo->iEntityID);
-        }
-    }
-    else
-    {
-        if (m_poConf->GetMinLeaseMS() > 0)
-        {
-            ptEntityInfo->iLeaseExpiredTimeMS = GetCurrTimeMS()
-                + m_poConf->GetMinLeaseMS();
-
-            CertainLogInfo("Add MinLease %u iEntityID %lu",
-                    m_poConf->GetMinLeaseMS(), ptEntityInfo->iEntityID);
-        }
-    }
-}
-
-bool clsEntityInfoMng::IsWaitLeaseTimeout(EntityInfo_t *ptEntityInfo)
-{
-    if (ptEntityInfo->iLeaseExpiredTimeMS == 0)
-    {
-        return false;
-    }
-
-    if (ptEntityInfo->iLeaseExpiredTimeMS <= GetCurrTimeMS())
-    {
-        ptEntityInfo->iLeaseExpiredTimeMS = 0;
-
-        CertainLogInfo("Remove iEntityID %lu", ptEntityInfo->iEntityID);
-        return false;
-    }
-
-    return true;
 }
 
 int clsEntityGroupMng::Init(clsConfigure *poConf)

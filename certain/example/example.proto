@@ -23,6 +23,7 @@ message CardRequest
     optional CardInfo card_info = 2;
     optional int32 delta = 3;
     optional uint64 uuid = 4;
+    optional uint64 entity_id = 5;
 }
 
 message CardResponse
@@ -70,6 +71,8 @@ enum OperCode
     eGetDBEntityMeta = 11;
     eGetAllForCertain = 12;
     eRecoverData = 13;
+
+    eBatchFunc = 21;
 }
 
 message EchoRequest

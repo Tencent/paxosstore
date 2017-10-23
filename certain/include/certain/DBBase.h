@@ -1,7 +1,7 @@
 #ifndef CERTAIN_INCLUDE_CERTAIN_DB_BASE_H_
 #define CERTAIN_INCLUDE_CERTAIN_DB_BASE_H_
 
-#include "CertainUserBase.h"
+#include "certain/CertainUserBase.h"
 
 namespace Certain
 {

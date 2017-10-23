@@ -1,11 +1,14 @@
 #include "PLogImpl.h"
-#include "Coding.h"
+
 #include "Certain.pb.h"
 
+#include "Coding.h"
+
 int clsPLogImpl::PutValue(uint64_t iEntityID, uint64_t iEntry,
-        uint64_t iValueID, const string &strValue)
+        uint64_t iValueID, const std::string &strValue)
 {
-    string strKey;
+    clsAutoDisableHook oAuto;
+    std::string strKey;
     EncodePLogValueKey(strKey, iEntityID, iEntry, iValueID);
 
     dbtype::WriteOptions tOpt;
@@ -21,9 +24,10 @@ int clsPLogImpl::PutValue(uint64_t iEntityID, uint64_t iEntry,
 }
 
 int clsPLogImpl::GetValue(uint64_t iEntityID, uint64_t iEntry,
-        uint64_t iValueID, string &strValue)
+        uint64_t iValueID, std::string &strValue)
 {
-    string strKey;
+    clsAutoDisableHook oAuto;
+    std::string strKey;
     EncodePLogValueKey(strKey, iEntityID, iEntry, iValueID);
 
     dbtype::ReadOptions tOpt;
@@ -40,9 +44,10 @@ int clsPLogImpl::GetValue(uint64_t iEntityID, uint64_t iEntry,
 }
 
 int clsPLogImpl::Put(uint64_t iEntityID, uint64_t iEntry,
-        const string &strRecord)
+        const std::string &strRecord)
 {
-    string strKey;
+    clsAutoDisableHook oAuto;
+    std::string strKey;
     EncodePLogKey(strKey, iEntityID, iEntry);
 
     dbtype::WriteOptions tOpt;
@@ -58,9 +63,10 @@ int clsPLogImpl::Put(uint64_t iEntityID, uint64_t iEntry,
 }
 
 int clsPLogImpl::Get(uint64_t iEntityID, uint64_t iEntry,
-        string &strRecord)
+        std::string &strRecord)
 {
-    string strKey;
+    clsAutoDisableHook oAuto;
+    std::string strKey;
     EncodePLogKey(strKey, iEntityID, iEntry);
 
     dbtype::ReadOptions tOpt;
@@ -77,17 +83,18 @@ int clsPLogImpl::Get(uint64_t iEntityID, uint64_t iEntry,
 }
 
 int clsPLogImpl::PutWithPLogEntityMeta(uint64_t iEntityID, uint64_t iEntry,
-        const Certain::PLogEntityMeta_t &tMeta, const string &strRecord)
+        const Certain::PLogEntityMeta_t &tMeta, const std::string &strRecord)
 {
-    string strKey;
+    clsAutoDisableHook oAuto;
+    std::string strKey;
     EncodePLogKey(strKey, iEntityID, iEntry);
 
-    string strMetaKey;
+    std::string strMetaKey;
     EncodePLogMetaKey(strMetaKey, iEntityID);
 
     CertainPB::PLogEntityMeta tPLogEntityMeta;
     tPLogEntityMeta.set_max_plog_entry(tMeta.iMaxPLogEntry);
-    string strMetaValue;
+    std::string strMetaValue;
     assert(tPLogEntityMeta.SerializeToString(&strMetaValue));
 
     dbtype::WriteOptions tOpt;
@@ -106,10 +113,11 @@ int clsPLogImpl::PutWithPLogEntityMeta(uint64_t iEntityID, uint64_t iEntry,
 int clsPLogImpl::GetPLogEntityMeta(uint64_t iEntityID,
         Certain::PLogEntityMeta_t &tMeta) 
 {
-    string strKey;
+    clsAutoDisableHook oAuto;
+    std::string strKey;
     EncodePLogMetaKey(strKey, iEntityID);
 
-    string strMetaValue;
+    std::string strMetaValue;
     dbtype::ReadOptions tOpt;
     dbtype::Status s = m_poLevelDB->Get(tOpt, strKey, &strMetaValue);
     if (!s.ok())
@@ -134,12 +142,13 @@ int clsPLogImpl::GetPLogEntityMeta(uint64_t iEntityID,
 
 int clsPLogImpl::LoadUncommitedEntrys(uint64_t iEntityID,
         uint64_t iMaxCommitedEntry, uint64_t iMaxLoadingEntry,
-        vector< pair<uint64_t, string> > &vecRecord, bool &bHasMore)
+        std::vector< std::pair<uint64_t, std::string> > &vecRecord, bool &bHasMore)
 {
+    clsAutoDisableHook oAuto;
     bHasMore = false;
     vecRecord.clear();
 
-    string strStartKey;
+    std::string strStartKey;
     EncodePLogKey(strStartKey, iEntityID, iMaxCommitedEntry + 1);
 
     dbtype::ReadOptions tOpt;
@@ -174,7 +183,7 @@ int clsPLogImpl::LoadUncommitedEntrys(uint64_t iEntityID,
             break;
         }
 
-        string strValue = iter->value().ToString();
+        std::string strValue = iter->value().ToString();
         vecRecord.push_back(std::make_pair(iEntry, strValue));
     }
 

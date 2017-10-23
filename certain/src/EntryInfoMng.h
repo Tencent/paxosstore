@@ -33,9 +33,8 @@ struct EntryInfo_t
     EntityInfo_t *ptEntityInfo;
     uint64_t iEntry;
 
-    // (TODO)rock: maintain in EntityInfo_t
-    uint32_t iActiveAcceptorID;
     uint32_t iEntrySize;
+    uint32_t iInteractCnt;
 
     bool bCatchUpFlag;
     bool bUncertain;

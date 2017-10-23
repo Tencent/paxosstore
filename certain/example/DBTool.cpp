@@ -1,9 +1,9 @@
 #include <string>
 
-#include "db/db_impl.h"
+#include "Certain.pb.h"
+
 #include "example/Coding.h"
 #include "example/example.pb.h"
-#include "src/Certain.pb.h"
 
 void Run(const std::string& strName) 
 {
@@ -28,8 +28,8 @@ void Run(const std::string& strName)
             {
                 example::CardInfo tCardInfo;
                 assert(tCardInfo.ParseFromString(strValue));
-                printf("infokv:\t iEntityID=%lu user_name=%s user_id=%lu balance=%lu\n", 
-                        iEntityID, tCardInfo.user_name().c_str(), tCardInfo.user_id(), 
+                printf("infokv:\t iEntityID=%lu iInfoID=%lu user_name=%s user_id=%lu balance=%lu\n", 
+                        iEntityID, iInfoID, tCardInfo.user_name().c_str(), tCardInfo.user_id(), 
                         tCardInfo.balance());
             }
             else if (DecodeEntityMetaKey(oKey, iEntityID))

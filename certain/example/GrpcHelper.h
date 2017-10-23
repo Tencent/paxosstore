@@ -7,11 +7,10 @@
 #include <grpc++/grpc++.h>
 #include <grpc/support/log.h>
 
-#include "utils/Thread.h"
-#include "utils/Singleton.h"
-#include "utils/Hash.h"
-
 #include "UserWorker.h"
+#include "utils/Hash.h"
+#include "utils/Singleton.h"
+#include "utils/Thread.h"
 
 class clsServiceImpl;
 
@@ -69,12 +68,12 @@ public: \
         m_oResponder.Finish(m_oResponse, m_oStatus, poBase); \
     } \
     bool ForUserProceed() { return m_enumCallStatus == PROCESS; } \
-    static vector<clsCallDataBase *> NewCallDataForQueue(uint32_t iNum, \
+    static std::vector<clsCallDataBase *> NewCallDataForQueue(uint32_t iNum, \
             PKG::SERV::AsyncService *poSERV, \
             grpc::ServerCompletionQueue *poQueue, \
             clsServiceImpl *poMyService) \
     { \
-        vector<clsCallDataBase *> vecCallData; \
+        std::vector<clsCallDataBase *> vecCallData; \
         for (uint32_t i = 0; i < iNum; ++i) \
         { \
             vecCallData.push_back(new cls_##PKG##SERV##ITF( \
@@ -98,7 +97,7 @@ private: \
 class clsServerWorker : public Certain::clsThreadBase
 {
 public:
-    clsServerWorker(string strAddr)
+    clsServerWorker(std::string strAddr)
     {
         m_strAddr = strAddr;
         m_oBuilder.AddListeningPort(
@@ -174,23 +173,23 @@ public:
     }
 
 private:
-    string m_strAddr;
+    std::string m_strAddr;
     grpc::ServerBuilder m_oBuilder;
-    unique_ptr<grpc::ServerCompletionQueue> m_poQueue;
-    unique_ptr<grpc::Server> m_poServer;
+    std::unique_ptr<grpc::ServerCompletionQueue> m_poQueue;
+    std::unique_ptr<grpc::Server> m_poServer;
     grpc::Service *m_poService;
 };
 
 class clsServerWorkerMng : public Certain::clsSingleton<clsServerWorkerMng>
 {
 private:
-    vector<clsCallDataBase *> m_vecCallData;
-    vector<clsServerWorker *> m_vecWorker;
+    std::vector<clsCallDataBase *> m_vecCallData;
+    std::vector<clsServerWorker *> m_vecWorker;
     int m_iCallDataNum;
     clsServiceImpl *m_poMyService;
 
 public:
-    int Init(string strAddr, int iWorkerNum, int iCallDataNum, clsServiceImpl *poMyService)
+    int Init(std::string strAddr, int iWorkerNum, int iCallDataNum, clsServiceImpl *poMyService)
     {
         m_vecCallData.clear();
         m_vecWorker.clear();
@@ -205,7 +204,7 @@ public:
         return 0;
     }
 
-    vector<clsServerWorker *> GetWorkers()
+    std::vector<clsServerWorker *> GetWorkers()
     {
         return m_vecWorker;
     }
@@ -220,7 +219,7 @@ public:
         return m_poMyService;
     }
 
-    void AddCallData(vector<clsCallDataBase *> vecCallData)
+    void AddCallData(std::vector<clsCallDataBase *> vecCallData)
     {
         for (uint32_t i = 0; i < vecCallData.size(); ++i)
         {
@@ -250,13 +249,13 @@ public:
 #define REGISTER_INTERFACE(PKG, SERV, ITF) \
     do { \
         clsServerWorkerMng *poMng = clsServerWorkerMng::GetInstance(); \
-        vector<clsServerWorker *> vec = poMng->GetWorkers(); \
+        std::vector<clsServerWorker *> vec = poMng->GetWorkers(); \
         clsServiceImpl *poMyService = dynamic_cast<clsServiceImpl *>(poMng->GetMyService()); \
         int iCallDataNum = poMng->GetCallDataNum(); \
         for (uint32_t i = 0; i < vec.size(); ++i) { \
             PKG::SERV::AsyncService *po = new PKG::SERV::AsyncService; \
             vec[i]->Register(po); \
-            vector<clsCallDataBase *> vecCallData = \
+            std::vector<clsCallDataBase *> vecCallData = \
             cls_##PKG##SERV##ITF::NewCallDataForQueue( \
                     iCallDataNum, dynamic_cast<PKG::SERV::AsyncService *>( \
                         vec[i]->GetService()), vec[i]->GetQueue(), poMyService); \

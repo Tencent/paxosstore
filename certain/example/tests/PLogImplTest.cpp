@@ -3,11 +3,9 @@
 #include <string>
 #include <gtest/gtest.h>
 
-using namespace Certain;
-
 static void OpenLevelDB(dbtype::DB** poLevelDB)
 {
-    string strName = "./plog.o";
+    std::string strName = "./plog.o";
 
     dbtype::Options tOpt;
     tOpt.create_if_missing = true;
@@ -19,7 +17,7 @@ TEST(CodingTest, GetValueTest)
 {
     dbtype::DB *poLevelDB = NULL;
     OpenLevelDB(&poLevelDB);
-    unique_ptr<dbtype::DB> oAuto(poLevelDB);
+    std::unique_ptr<dbtype::DB> oAuto(poLevelDB);
     clsPLogImpl oImpl(poLevelDB);
 
     std::string strValue = "";
@@ -28,7 +26,7 @@ TEST(CodingTest, GetValueTest)
     uint64_t iValueID = 11;
 
     EXPECT_EQ(oImpl.GetValue(
-                iEntityID, iEntry, iValueID, strValue), eRetCodeNotFound);
+                iEntityID, iEntry, iValueID, strValue), Certain::eRetCodeNotFound);
     EXPECT_EQ(oImpl.PutValue(iEntityID, iEntry, iValueID, "hello"), 0);
     EXPECT_EQ(oImpl.GetValue(iEntityID, iEntry, iValueID, strValue), 0);
     EXPECT_STREQ(strValue.c_str(), "hello");
@@ -38,14 +36,14 @@ TEST(CodingTest, GetRecordTest)
 {
     dbtype::DB *poLevelDB = NULL;
     OpenLevelDB(&poLevelDB);
-    unique_ptr<dbtype::DB> oAuto(poLevelDB);
+    std::unique_ptr<dbtype::DB> oAuto(poLevelDB);
     clsPLogImpl oImpl(poLevelDB);
 
     std::string strRecord = "";
     uint64_t iEntityID = 10086;
     uint64_t iEntry = 10;
 
-    EXPECT_EQ(oImpl.Get(iEntityID, iEntry, strRecord), eRetCodeNotFound);
+    EXPECT_EQ(oImpl.Get(iEntityID, iEntry, strRecord), Certain::eRetCodeNotFound);
     EXPECT_EQ(oImpl.Put(iEntityID, iEntry, "world"), 0);
     EXPECT_EQ(oImpl.Get(iEntityID, iEntry, strRecord), 0);
     usleep(10); // change the timestamp
@@ -57,7 +55,7 @@ TEST(CodingTest, GetMetaTest)
 {
     dbtype::DB *poLevelDB = NULL;
     OpenLevelDB(&poLevelDB);
-    unique_ptr<dbtype::DB> oAuto(poLevelDB);
+    std::unique_ptr<dbtype::DB> oAuto(poLevelDB);
     clsPLogImpl oImpl(poLevelDB);
 
     std::string strRecord = "";
@@ -65,8 +63,8 @@ TEST(CodingTest, GetMetaTest)
     uint64_t iEntityID = 10086;
     uint64_t iEntry = 20;
 
-    EXPECT_EQ(oImpl.Get(iEntityID, iEntry, strRecord), eRetCodeNotFound);
-    EXPECT_EQ(oImpl.GetPLogEntityMeta(iEntityID, tMeta), eRetCodeNotFound);
+    EXPECT_EQ(oImpl.Get(iEntityID, iEntry, strRecord), Certain::eRetCodeNotFound);
+    EXPECT_EQ(oImpl.GetPLogEntityMeta(iEntityID, tMeta), Certain::eRetCodeNotFound);
 
     tMeta.iMaxPLogEntry = 30;
     EXPECT_EQ(oImpl.PutWithPLogEntityMeta(
@@ -84,7 +82,7 @@ TEST(CodingTest, LoadTest)
 {
     dbtype::DB *poLevelDB = NULL;
     OpenLevelDB(&poLevelDB);
-    unique_ptr<dbtype::DB> oAuto(poLevelDB);
+    std::unique_ptr<dbtype::DB> oAuto(poLevelDB);
     clsPLogImpl oImpl(poLevelDB);
 
     EXPECT_EQ(oImpl.Put(100, 2, "100-2"), 0);
@@ -92,7 +90,7 @@ TEST(CodingTest, LoadTest)
     EXPECT_EQ(oImpl.Put(100, 5, "100-5"), 0);
 
     bool bHasMore;
-    vector< pair<uint64_t, string> > vecRecord;
+    std::vector< std::pair<uint64_t, std::string> > vecRecord;
 
     EXPECT_EQ(oImpl.LoadUncommitedEntrys(100, 0, 1, vecRecord, bHasMore), 0);
     EXPECT_EQ(vecRecord.size(), 0);

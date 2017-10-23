@@ -1,38 +1,32 @@
-#include "example/ServiceImpl.h"
+#include "grpc/src/core/lib/support/env.h"
+
 #include "CertainUserImpl.h"
 #include "example/DBImpl.h"
 #include "example/PLogImpl.h"
-#include "grpc/src/core/lib/support/env.h"
+#include "example/ServiceImpl.h"
 
-using namespace Certain;
-
-int InitDB(clsCertainUserBase* poImpl, Certain::clsConfigure* poConf)
+int InitDB(Certain::clsCertainUserBase* poImpl, Certain::clsConfigure* poConf)
 {
-    string strLID = to_string(poConf->GetLocalServerID());
+    std::string strLID = std::to_string(poConf->GetLocalServerID());
 
     dbtype::Options tOpts;
     tOpts.create_if_missing = true;
     tOpts.compaction_filter = new clsPLogFilter;
     tOpts.comparator = new clsPLogComparator;
 
-    static const string kLogDBName = poConf->GetCertainPath() + "/logdb_" + strLID;
+    static const std::string kLogDBName = poConf->GetCertainPath() + "/logdb_" + strLID;
     dbtype::DB* poLogDB = NULL;
     assert(dbtype::DB::Open(tOpts, kLogDBName.c_str(), &poLogDB).ok());
 
-    clsPLogBase* oPLogImpl = new clsPLogImpl(poLogDB);
+    Certain::clsPLogBase* oPLogImpl = new clsPLogImpl(poLogDB);
 
-    static const string kDataDBName = poConf->GetCertainPath() + "/datadb_" + strLID;
+    dbtype::Options tDBOpts;
+    tDBOpts.create_if_missing = true;
+    static const std::string kDataDBName = poConf->GetCertainPath() + "/datadb_" + strLID;
     dbtype::DB* poDataDB = NULL;
-    assert(dbtype::DB::Open(tOpts, kDataDBName.c_str(), &poDataDB).ok());
+    assert(dbtype::DB::Open(tDBOpts, kDataDBName.c_str(), &poDataDB).ok());
 
-    pthread_mutex_t* poSnapshotMapMutex = new pthread_mutex_t;
-    assert(0 == pthread_mutex_init(poSnapshotMapMutex, NULL));
-
-    std::map<uint32_t, std::pair<uint64_t, std::shared_ptr<clsSnapshotWrapper>>> *poSnapshotMap =
-        new std::map<uint32_t, std::pair<uint64_t, std::shared_ptr<clsSnapshotWrapper>>>;
-    assert(poSnapshotMap != NULL);
-
-    clsDBBase* oDBImpl = new clsDBImpl(poDataDB, poSnapshotMapMutex, poSnapshotMap);
+    Certain::clsDBBase* oDBImpl = new clsDBImpl(poDataDB);
 
     return Certain::clsCertainWrapper::GetInstance()->Init(poImpl, oPLogImpl, oDBImpl, poConf);
 }
@@ -49,11 +43,11 @@ int main(int argc, char** argv)
 	}
 
     int iRet;
-	clsCertainUserBase* poImpl = new clsCertainUserImpl();
+    Certain::clsCertainUserBase* poImpl = new clsCertainUserImpl();
 
     Certain::clsConfigure oConf(argc, argv);
-    string strLID = to_string(oConf.GetLocalServerID());
-    SetThreadTitle("card_srv_%u", oConf.GetLocalServerID());
+    std::string strLID = std::to_string(oConf.GetLocalServerID());
+    Certain::SetThreadTitle("card_srv_%u", oConf.GetLocalServerID());
 
     if (access(oConf.GetCertainPath().c_str(), F_OK) != 0)
     {
@@ -84,7 +78,7 @@ int main(int argc, char** argv)
     // New Workers.
     clsServiceImpl oImpl;
     clsServerWorkerMng *poMng = clsServerWorkerMng::GetInstance();
-    string strAddr = "0.0.0.0:" + to_string(dynamic_cast<clsCertainUserImpl*>(
+    std::string strAddr = "0.0.0.0:" + std::to_string(dynamic_cast<clsCertainUserImpl*>(
                 poWrapper->GetCertainUser())->GetServicePort());
     poMng->Init(strAddr, iWorkerNum, iCallDataNumPerWorker, &oImpl);
 

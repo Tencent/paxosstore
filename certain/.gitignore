@@ -8,3 +8,4 @@ bench_tool
 card_srv
 card_tool
 db_tool
+rw_stress_tool

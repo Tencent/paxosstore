@@ -1,5 +1,7 @@
 #pragma once
-#include "Certain.h"
+#include "certain/Certain.h"
+
+#include "CoHashLock.h"
 #include "network/InetAddr.h"
 
 class clsCertainUserImpl : public Certain::clsCertainUserBase
@@ -7,9 +9,13 @@ class clsCertainUserImpl : public Certain::clsCertainUserBase
 private:
     uint16_t m_hPort;
     Certain::clsConfigure *m_poConf;
+    clsCoHashLock *m_poCoHashLock;
 
 public:
-    clsCertainUserImpl() : m_hPort(0), m_poConf(NULL) { }
+    clsCertainUserImpl() : m_hPort(0), 
+                           m_poConf(NULL),
+                           m_poCoHashLock(new clsCoHashLock(100000)) { }
+
     ~clsCertainUserImpl() { }
 
     virtual int GetLocalAcceptorID(uint64_t iEntityID,
@@ -20,7 +26,13 @@ public:
 
     virtual int InitServerAddr(Certain::clsConfigure *poConf);
 
-    virtual int GetSvrAddr(uint64_t iEntityID, uint32_t iAcceptorID, Certain::InetAddr_t & tAddr);
+    virtual void LockEntity(uint64_t iEntityID, void **ppLockInfo);
+
+    virtual void UnLockEntity(void *ppLockInfo);
+
+    virtual void TickHandleCallBack();
+
+    int GetServiceAddr(uint64_t iEntityID, uint32_t iAcceptorID, std::string &tAddr);
 
     uint16_t GetServicePort() { return m_hPort; }
 };

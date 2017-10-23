@@ -1,5 +1,7 @@
 #include "example/Client.h"
 
+namespace {
+
 bool IsValidStatusCode(int iCode) 
 {
     return (iCode == 0 || iCode == example::StatusCode::eCardBalanceNotEnough ||
@@ -19,6 +21,8 @@ bool IsGetOper(int iOper)
             iOper == example::OperCode::eGetAllForCertain || 
             iOper == example::OperCode::eRecoverData);
 }
+
+}  // namespace
 
 clsClient::clsClient(std::vector<std::string>* poIPList)
 {

@@ -1,14 +1,14 @@
+#include <atomic>
 #include <iostream>
 #include <memory>
 #include <string>
-#include <atomic>
 
 #include <grpc++/grpc++.h>
 
 #include "example.grpc.pb.h"
+#include "utils/Thread.h"
 #include "utils/Time.h"
 #include "utils/UseTimeStat.h"
-#include "utils/Thread.h"
 
 Certain::clsUseTimeStat s_oStat("echo");
 std::atomic_int s_iStopCnt(0);
@@ -68,7 +68,7 @@ int main(int argc, char** argv)
 
     grpc_init();
 
-    string strAddr = argv[1];
+    std::string strAddr = argv[1];
     int iChannelNum = atoi(argv[2]);
     int iWorkerNumPerChannel = atoi(argv[3]);
     int iCountPerWorker = atoi(argv[4]);

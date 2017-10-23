@@ -211,3 +211,8 @@ bool DecodePLogMetaKey(dbtype::Slice strKey, uint64_t& iEntityID)
 
     return cOne == 1 && iTimestampMS == 0;
 }
+
+uint64_t GetEntityID(uint64_t iKey, uint64_t iEntityNum)
+{
+    return iKey % iEntityNum;
+}

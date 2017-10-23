@@ -128,6 +128,15 @@ TEST(CodingTest, PLogMetaKeyTest)
     EXPECT_FALSE(DecodePLogMetaKey(dbtype::Slice(strKey), iEntityID));
 }
 
+TEST(CodingTest, GetEntityIDTest)
+{
+    EXPECT_EQ(GetEntityID(123), GetEntityID(123));
+    EXPECT_NE(GetEntityID(123), GetEntityID(321));
+    EXPECT_EQ(GetEntityID(123, 100), GetEntityID(123, 100));
+    EXPECT_EQ(GetEntityID(123, 100), GetEntityID(223, 100));
+    EXPECT_NE(GetEntityID(123, 100), GetEntityID(321, 100));
+}
+
 int main(int argc, char** argv)
 {
     testing::InitGoogleTest(&argc, argv);

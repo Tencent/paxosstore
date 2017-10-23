@@ -30,17 +30,13 @@
 
 #define MAX_IO_WORKER_NUM		128
 #define MAX_ENTITY_WORKER_NUM	128
-#define ENTITY_NUM 				(1 << 20)
+#define MAX_SMALL_ENTITY_NUM 	0 // Disabled.
 
-// Required: PB's limited size(60MB default) > MAX_WRITEBATCH_SIZE * 2
-//           And a few bytes should be reserved for other fields.
 #define MAX_WRITEBATCH_SIZE		((20 << 20) - 1000) // 20MB around
 
 #define MAX_UUID_NUM			50000
 #define UUID_GROUP_NUM			32
 
-// (TODO)rock: add pipe_num conf
-// #define MAX_ASYNC_PIPE_NUM 		6000
 #define MAX_ASYNC_PIPE_NUM 		60
 
 #define MAX_CONTROL_GROUP_NUM   24

@@ -1,4 +1,4 @@
-#include "Certain.h"
+#include "certain/Certain.h"
 #include "ConnWorker.h"
 #include "EntityWorker.h"
 #include "PLogWorker.h"
@@ -69,8 +69,6 @@ int clsCertainWrapper::EntityCatchUp(uint64_t iEntityID, uint64_t &iMaxCommitedE
 
     uint64_t iEntry = 0;
     std::string strWriteBatch;
-
-    clsAutoEntityLock oEntityLock(iEntityID);
 
     uint32_t iFlag = 0;
     iMaxCommitedEntry = 0;
@@ -250,16 +248,6 @@ int clsCertainWrapper::Init(clsCertainUserBase *poCertainUser,
 
     m_poConf->PrintAll();
 
-    if (m_poConf->GetUsePerfLog())
-    {
-        iRet = clsPerfLog::GetInstance()->Init(m_poConf->GetPerfLogPath().c_str());
-        if (iRet != 0)
-        {
-            CertainLogFatal("clsPerfLog::GetInstance()->Init ret %d", iRet);
-            return -4;
-        }
-    }
-
     iRet = poCertainUser->InitServerAddr(m_poConf);
     if (iRet != 0)
     {
@@ -326,8 +314,6 @@ void clsCertainWrapper::Destroy()
 
     clsCmdFactory::GetInstance()->Destroy();
 
-    clsPerfLog::GetInstance()->Destroy();
-
     DestroyWorkers();
 
     DestroyManagers();
@@ -380,6 +366,29 @@ int clsCertainWrapper::CheckDBStatus(uint64_t iEntityID,
         iMaxContChosenEntry = poCmd->GetMaxContChosenEntry();
         iMaxChosenEntry = poCmd->GetMaxChosenEntry();
     }
+    else if (iRet != 0)
+    {
+        CertainLogError("iEntityID %lu GetMaxChosenEntry iRet %d",
+                iEntityID, iRet);
+        return iRet;
+    }
+    else if (iLeaseTimeoutMS > 0)
+    {
+        OSS::ReportLeaseWait();
+        poll(NULL, 0, iLeaseTimeoutMS);
+
+        CertainLogError("iEntityID %lu wait iLeaseTimeoutMS %lu",
+                iEntityID, iLeaseTimeoutMS);
+
+        iRet = m_poEntityGroupMng->GetMaxChosenEntry(iEntityID,
+                iMaxContChosenEntry, iMaxChosenEntry, iLeaseTimeoutMS);
+        if (iRet != 0)
+        {
+            CertainLogError("iEntityID %lu iLeaseTimeoutMS %lu ret %d",
+                    iEntityID, iLeaseTimeoutMS, iRet);
+            return iRet;
+        }
+    }
 
     // iMaxContChosenEntry may update posterior to iCommitedEntry.
     if (iMaxContChosenEntry < iCommitedEntry)
@@ -415,58 +424,6 @@ int clsCertainWrapper::CheckDBStatus(uint64_t iEntityID,
             TriggeRecover(iEntityID, iCommitedEntry);
         }
         return eRetCodeCatchUp;
-    }
-
-    if (iCommitedEntry < iMaxChosenEntry)
-    {
-        return eRetCodeDBLagBehind;
-    }
-    else if (iLeaseTimeoutMS > 0)
-    {
-        uint32_t iLocalAcceptorID = INVALID_ACCEPTOR_ID;
-        iRet = m_poCertainUser->GetLocalAcceptorID(iEntityID, iLocalAcceptorID);
-        AssertEqual(iRet, 0);
-
-        // The slave hold it, while the master go on.
-        if (iLocalAcceptorID == 1)
-        {
-            AssertNotMore(iLeaseTimeoutMS, m_poConf->GetMinLeaseMS());
-            OSS::ReportLeaseWait();
-            poll(NULL, 0, iLeaseTimeoutMS);
-        }
-        else
-        {
-            CertainLogError("Check E(%lu, %lu) iLeaseTimeoutMS %lu",
-                    iEntityID, iCommitedEntry, iLeaseTimeoutMS);
-            return eRetCodeLeaseReject;
-        }
-
-        iMaxContChosenEntry = 0;
-        iMaxChosenEntry = 0;
-        iLeaseTimeoutMS = 0;
-
-        iRet = m_poEntityGroupMng->GetMaxChosenEntry(iEntityID,
-                iMaxContChosenEntry, iMaxChosenEntry, iLeaseTimeoutMS);
-        if (iRet == eRetCodeNotFound)
-        {
-            CertainLogFatal("Check E(%lu, %lu) iLeaseTimeoutMS %lu",
-                    iEntityID, iCommitedEntry, iLeaseTimeoutMS);
-            return eRetCodeNotFound;
-        }
-
-        if (iMaxContChosenEntry < iMaxChosenEntry)
-        {
-            CertainLogError("iEntityID %lu entrys: %lu %lu %lu",
-                    iEntityID, iCommitedEntry, iMaxContChosenEntry, iMaxChosenEntry);
-            return eRetCodeCatchUp;
-        }
-
-        if (iLeaseTimeoutMS > 0)
-        {
-            CertainLogError("Check E(%lu, %lu) iLeaseTimeoutMS %lu",
-                    iEntityID, iCommitedEntry, iLeaseTimeoutMS);
-            return eRetCodeLeaseReject;
-        }
     }
 
     if (iCommitedEntry >= iMaxChosenEntry)
@@ -828,7 +785,7 @@ bool clsCertainWrapper::CheckIfEntryDeletable(uint64_t iEntityID,
         return false;
     }
 
-    CertainLogInfo("E(%lu, %lu) iMaxCommitedEntry %lu",
+    CertainLogImpt("E(%lu, %lu) iMaxCommitedEntry %lu",
             iEntityID, iEntry, iMaxCommitedEntry);
 
     return true;
@@ -882,9 +839,6 @@ void clsCertainWrapper::Run()
 
         m_poConf->LoadAgain();
 
-        bool bAsync = true;
-        clsPerfLog::GetInstance()->Flush(bAsync);
-
         if (clsThreadBase::IsStopFlag())
         {
             if (!bStopWorkersCalled)
@@ -894,7 +848,6 @@ void clsCertainWrapper::Run()
             }
             else if (CheckIfAllWorkerExited())
             {
-                clsPerfLog::GetInstance()->Destroy();
                 break;
             }
         }

@@ -1,13 +1,10 @@
 #pragma once
 
-// db
-#include "DBType.h"
-#include "db.h"
-#include "slice.h"
-#include "write_batch.h"
+#include "certain/Certain.h"
 
-#include "Certain.h"
 #include "Coding.h"
+#include "CoHashLock.h"
+#include "DBType.h"
 
 class clsPLogFilter : public dbtype::CompactionFilter
 {
@@ -32,7 +29,7 @@ public:
 class clsPLogComparator : public dbtype::Comparator
 {
 public:
-    virtual int Compare(const dbtype::Slice& a, const dbtype::Slice& b) const
+    int Compare(const dbtype::Slice& a, const dbtype::Slice& b) const override
     {
         assert(a.size() >= 8 && b.size() >= 8);
         dbtype::Slice ta = a, tb = b;
@@ -43,7 +40,8 @@ public:
 
     const char* Name() const override { return "clsPLogComparator"; }
 
-    void FindShortestSeparator(std::string* start, const dbtype::Slice& limit) const
+    void FindShortestSeparator(std::string* start,
+            const dbtype::Slice& limit) const override
     {
         // return with *start unchanged
     }
@@ -65,24 +63,24 @@ public:
     virtual ~clsPLogImpl() { }
 
     virtual int PutValue(uint64_t iEntityID, uint64_t iEntry,
-            uint64_t iValueID, const string &strValue);
+            uint64_t iValueID, const std::string &strValue);
 
     virtual int GetValue(uint64_t iEntityID, uint64_t iEntry,
-            uint64_t iValueID, string &strValue);
+            uint64_t iValueID, std::string &strValue);
 
     virtual int Put(uint64_t iEntityID, uint64_t iEntry,
-            const string &strRecord);
+            const std::string &strRecord);
 
     virtual int Get(uint64_t iEntityID, uint64_t iEntry,
-            string &strRecord);
+            std::string &strRecord);
 
     virtual int PutWithPLogEntityMeta(uint64_t iEntityID, uint64_t iEntry,
-            const Certain::PLogEntityMeta_t &tMeta, const string &strRecord);
+            const Certain::PLogEntityMeta_t &tMeta, const std::string &strRecord);
 
     virtual int GetPLogEntityMeta(uint64_t iEntityID,
             Certain::PLogEntityMeta_t &tMeta);
 
     virtual int LoadUncommitedEntrys(uint64_t iEntityID,
             uint64_t iMaxCommitedEntry, uint64_t iMaxLoadingEntry,
-            vector< pair<uint64_t, string> > &vecRecord, bool &bHasMore);
+            std::vector< std::pair<uint64_t, std::string> > &vecRecord, bool &bHasMore);
 };

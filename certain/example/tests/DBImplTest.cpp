@@ -5,8 +5,6 @@
 
 #include "Certain.pb.h"
 #include "example/Coding.h"
-// db
-#include "write_batch.h"
 
 using namespace Certain;
 
@@ -20,7 +18,7 @@ protected:
     {
         m_poLevelDB = NULL;
 
-        string strName = "./db.o";
+        std::string strName = "./db.o";
 
         dbtype::Options tOpt;
         tOpt.create_if_missing = true;
@@ -47,97 +45,94 @@ protected:
         return oImpl.SetEntityMeta(iEntityID, iMaxCommitedEntry, iFlag);
     }
 
+    dbtype::Status Get(const std::string& strKey, std::string* strValue)
+    {
+        static dbtype::ReadOptions tReadOpt;
+        return m_poLevelDB->Get(tReadOpt, strKey, strValue);
+    }
+
+    dbtype::Status Put(const std::string& strKey, const std::string& strValue)
+    {
+        static dbtype::WriteOptions tWriteOpt;
+        return m_poLevelDB->Put(tWriteOpt, strKey, strValue);
+    }
+
     dbtype::DB *m_poLevelDB = NULL;
 };
 
 }  // namespace Certain
 
-// Tests Put, MultiPut, Get, Delete
-TEST_F(clsDBImplTest, BasicTest)
+TEST_F(clsDBImplTest, MultiPutTest)
 {
-    unique_ptr<dbtype::DB> oAuto(m_poLevelDB);
+    std::unique_ptr<dbtype::DB> oAuto(m_poLevelDB);
     clsDBImpl oImpl(m_poLevelDB);
-
-    string strKey = "key";
-    string strValue = "value";
-    string strGetValue;
-    string strWriteBatch;
-
-    EXPECT_EQ(eRetCodeOK, oImpl.Put(strKey, strValue, &strWriteBatch));
-    EXPECT_EQ(eRetCodeNotFound, oImpl.Get(strKey, strGetValue));
-    EXPECT_EQ(eRetCodeOK, oImpl.Put(strKey, strValue));
-    EXPECT_EQ(eRetCodeOK, oImpl.Get(strKey, strGetValue));
-    EXPECT_EQ(strValue, strGetValue);
 
     dbtype::WriteBatch oWB;
     for (int i = 1; i <= 3; ++i)
         oWB.Put(std::to_string(i), std::to_string(i));
-    EXPECT_EQ(eRetCodeOK, oImpl.MultiPut(&oWB));
+    EXPECT_EQ(Certain::eRetCodeOK, oImpl.MultiPut(&oWB));
     for (int i = 1; i <= 3; ++i)
     {
-        EXPECT_EQ(eRetCodeOK, oImpl.Get(std::to_string(i), strGetValue));
-        EXPECT_EQ(std::to_string(i), strGetValue);
+        std::string strValue;
+        EXPECT_TRUE(Get(std::to_string(i), &strValue).ok());
+        EXPECT_EQ(std::to_string(i), strValue);
     }
-
-    strWriteBatch.clear();
-    EXPECT_EQ(eRetCodeOK, oImpl.Delete(strKey, &strWriteBatch));
-    EXPECT_EQ(eRetCodeOK, oImpl.Get(strKey, strGetValue));
-    EXPECT_EQ(eRetCodeOK, oImpl.Delete(strKey));
-    EXPECT_EQ(eRetCodeNotFound, oImpl.Get(strKey, strGetValue));
 
     oWB.Clear();
     for (int i = 1; i <= 3; ++i)
         oWB.Delete(std::to_string(i));
-    EXPECT_EQ(eRetCodeOK, oImpl.MultiPut(&oWB));
+    EXPECT_EQ(Certain::eRetCodeOK, oImpl.MultiPut(&oWB));
     for (int i = 1; i <= 3; ++i)
-        EXPECT_EQ(eRetCodeNotFound, oImpl.Get(std::to_string(i), strGetValue));
+    {
+        std::string strValue;
+        EXPECT_TRUE(Get(std::to_string(i), &strValue).IsNotFound());
+    }
 
-    string strError = "error";
+    std::string strError = "error";
     dbtype::WriteBatch oErrorWB(strError); 
-    EXPECT_EQ(eRetCodeDBPutErr, oImpl.MultiPut(&oErrorWB));
+    EXPECT_EQ(Certain::eRetCodeDBPutErr, oImpl.MultiPut(&oErrorWB));
 }
 
 TEST_F(clsDBImplTest, CommitTest)
 {
-    unique_ptr<dbtype::DB> oAuto(m_poLevelDB);
+    std::unique_ptr<dbtype::DB> oAuto(m_poLevelDB);
     clsDBImpl oImpl(m_poLevelDB);
 
     uint64_t iEntityID = 1234567890;
     uint64_t iEntry = 10086;
-    string strWriteBatch;
+    std::string strWriteBatch;
 
     // Only commits (iEntityID->iEntry).
-    EXPECT_EQ(eRetCodeOK, oImpl.Commit(iEntityID, iEntry, strWriteBatch));
+    EXPECT_EQ(Certain::eRetCodeOK, oImpl.Commit(iEntityID, iEntry, strWriteBatch));
     
-    string strMetaKey, strMetaValue;
+    std::string strMetaKey, strMetaValue;
     EncodeEntityMetaKey(strMetaKey, iEntityID);
     CertainPB::DBEntityMeta tDBEntityMeta;
-    EXPECT_EQ(eRetCodeOK, oImpl.Get(strMetaKey, strMetaValue));
+    EXPECT_TRUE(Get(strMetaKey, &strMetaValue).ok());
     assert(tDBEntityMeta.ParseFromString(strMetaValue));
     EXPECT_EQ(iEntry, tDBEntityMeta.max_commited_entry());
 
     // Commits both (iEntityID->iEntry) and kv.
     strMetaKey.clear();
     EncodeEntityMetaKey(strMetaKey, iEntityID + 1);
-    EXPECT_EQ(eRetCodeNotFound, oImpl.Get(strMetaKey, strMetaValue));
+    EXPECT_TRUE(Get(strMetaKey, &strMetaValue).IsNotFound());
 
-    string strKey = "key";
-    string strValue = "value";
-    string strGetValue;
+    std::string strKey = "key";
+    std::string strValue = "value";
+    std::string strGetValue;
 
     dbtype::WriteBatch oWB;
     oWB.Put(strKey, strValue);
     strWriteBatch = oWB.Data();
-    EXPECT_EQ(eRetCodeOK, oImpl.Commit(iEntityID + 1, iEntry, strWriteBatch));
-    EXPECT_EQ(eRetCodeOK, oImpl.Get(strMetaKey, strMetaValue));
-    EXPECT_EQ(eRetCodeOK, oImpl.Get(strKey, strGetValue));
+    EXPECT_EQ(Certain::eRetCodeOK, oImpl.Commit(iEntityID + 1, iEntry, strWriteBatch));
+    EXPECT_TRUE(Get(strMetaKey, &strMetaValue).ok());
+    EXPECT_TRUE(Get(strKey, &strGetValue).ok());
     EXPECT_EQ(strValue, strGetValue);
-    EXPECT_EQ(eRetCodeOK, oImpl.Delete(strKey));
 }
 
 TEST_F(clsDBImplTest, GetEntityMetaTest)
 {
-    unique_ptr<dbtype::DB> oAuto(m_poLevelDB);
+    std::unique_ptr<dbtype::DB> oAuto(m_poLevelDB);
     clsDBImpl oImpl(m_poLevelDB);
 
     dbtype::SnapshotImpl oSnapshot;
@@ -147,16 +142,16 @@ TEST_F(clsDBImplTest, GetEntityMetaTest)
     uint64_t iEntry = 0;
     uint32_t iFlag = 0;
 
-    EXPECT_EQ(eRetCodeNotFound, oImpl.GetEntityMeta(iEntityID, iEntry, iFlag, &oSnapshot));
-    EXPECT_EQ(eRetCodeOK, oImpl.GetEntityMeta(iEntityID, iEntry, iFlag, m_poLevelDB->GetSnapshot()));
-    EXPECT_EQ(eRetCodeOK, oImpl.GetEntityMeta(iEntityID, iEntry, iFlag, NULL));
-    EXPECT_EQ(eRetCodeOK, oImpl.GetEntityMeta(iEntityID, iEntry, iFlag));
+    EXPECT_EQ(Certain::eRetCodeNotFound, oImpl.GetEntityMeta(iEntityID, iEntry, iFlag, &oSnapshot));
+    EXPECT_EQ(Certain::eRetCodeOK, oImpl.GetEntityMeta(iEntityID, iEntry, iFlag, m_poLevelDB->GetSnapshot()));
+    EXPECT_EQ(Certain::eRetCodeOK, oImpl.GetEntityMeta(iEntityID, iEntry, iFlag, NULL));
+    EXPECT_EQ(Certain::eRetCodeOK, oImpl.GetEntityMeta(iEntityID, iEntry, iFlag));
     EXPECT_EQ(10086, iEntry);
 }
 
 TEST_F(clsDBImplTest, SetEntityMetaTest)
 {
-    unique_ptr<dbtype::DB> oAuto(m_poLevelDB);
+    std::unique_ptr<dbtype::DB> oAuto(m_poLevelDB);
 
     dbtype::SnapshotImpl oSnapshot;
     oSnapshot.number_ = 0;
@@ -165,183 +160,171 @@ TEST_F(clsDBImplTest, SetEntityMetaTest)
     uint32_t iFlag = 1;
     uint64_t iCommitedEntry = 10087;
 
-    EXPECT_EQ(eRetCodeOK, SetEntityMeta(iEntityID, -1, iFlag));
+    EXPECT_EQ(Certain::eRetCodeOK, SetEntityMeta(iEntityID, -1, iFlag));
     CertainPB::DBEntityMeta tDBEntityMeta;
-    EXPECT_EQ(eRetCodeOK, GetEntityMeta(iEntityID, tDBEntityMeta));
+    EXPECT_EQ(Certain::eRetCodeOK, GetEntityMeta(iEntityID, tDBEntityMeta));
     EXPECT_EQ(iFlag, tDBEntityMeta.flag());
 
-    EXPECT_EQ(eRetCodeOK, SetEntityMeta(iEntityID, -1, -1));
+    EXPECT_EQ(Certain::eRetCodeOK, SetEntityMeta(iEntityID, -1, -1));
     tDBEntityMeta.Clear();
-    EXPECT_EQ(eRetCodeOK, GetEntityMeta(iEntityID, tDBEntityMeta));
+    EXPECT_EQ(Certain::eRetCodeOK, GetEntityMeta(iEntityID, tDBEntityMeta));
     EXPECT_EQ(1, tDBEntityMeta.flag());
 
-    EXPECT_EQ(eRetCodeOK, SetEntityMeta(iEntityID, iCommitedEntry, iFlag));
-    EXPECT_EQ(eRetCodeOK, GetEntityMeta(iEntityID, tDBEntityMeta));
+    EXPECT_EQ(Certain::eRetCodeOK, SetEntityMeta(iEntityID, iCommitedEntry, iFlag));
+    EXPECT_EQ(Certain::eRetCodeOK, GetEntityMeta(iEntityID, tDBEntityMeta));
     EXPECT_EQ(iCommitedEntry, tDBEntityMeta.max_commited_entry());
     EXPECT_EQ(1, tDBEntityMeta.flag());
 
-    EXPECT_EQ(eRetCodeOK, SetEntityMeta(iEntityID + 2, iCommitedEntry, iFlag));
+    EXPECT_EQ(Certain::eRetCodeOK, SetEntityMeta(iEntityID + 2, iCommitedEntry, iFlag));
 
-    EXPECT_EQ(eRetCodeNotFound, GetEntityMeta(iEntityID, tDBEntityMeta, &oSnapshot));
-    EXPECT_EQ(eRetCodeOK, GetEntityMeta(iEntityID, tDBEntityMeta, m_poLevelDB->GetSnapshot()));
-    EXPECT_EQ(eRetCodeOK, GetEntityMeta(iEntityID, tDBEntityMeta, NULL));
-    EXPECT_EQ(eRetCodeOK, GetEntityMeta(iEntityID, tDBEntityMeta));
+    EXPECT_EQ(Certain::eRetCodeNotFound, GetEntityMeta(iEntityID, tDBEntityMeta, &oSnapshot));
+    EXPECT_EQ(Certain::eRetCodeOK, GetEntityMeta(iEntityID, tDBEntityMeta, m_poLevelDB->GetSnapshot()));
+    EXPECT_EQ(Certain::eRetCodeOK, GetEntityMeta(iEntityID, tDBEntityMeta, NULL));
+    EXPECT_EQ(Certain::eRetCodeOK, GetEntityMeta(iEntityID, tDBEntityMeta));
     EXPECT_EQ(10087, tDBEntityMeta.max_commited_entry());
 }
 
 TEST_F(clsDBImplTest, EntityMetaTest)
 {
-    unique_ptr<dbtype::DB> oAuto(m_poLevelDB);
+    std::unique_ptr<dbtype::DB> oAuto(m_poLevelDB);
     clsDBImpl oImpl(m_poLevelDB);
 
     uint64_t iEntityID = 9123456789LL;
     uint64_t iEntry = 123456789000LL;
     uint32_t iFlag = 1234567890;
 
-    EXPECT_EQ(eRetCodeNotFound, oImpl.GetEntityMeta(iEntityID, iEntry, iFlag));
-    EXPECT_EQ(eRetCodeOK, oImpl.SetEntityMeta(iEntityID, iEntry, iFlag));
-    EXPECT_EQ(eRetCodeOK, oImpl.GetEntityMeta(iEntityID, iEntry, iFlag));
+    EXPECT_EQ(Certain::eRetCodeNotFound, oImpl.GetEntityMeta(iEntityID, iEntry, iFlag));
+    EXPECT_EQ(Certain::eRetCodeOK, oImpl.SetEntityMeta(iEntityID, iEntry, iFlag));
+    EXPECT_EQ(Certain::eRetCodeOK, oImpl.GetEntityMeta(iEntityID, iEntry, iFlag));
     EXPECT_EQ(123456789000LL, iEntry);
     EXPECT_EQ(1234567890, iFlag);
 
-    EXPECT_EQ(eRetCodeOK, oImpl.SetEntityMeta(iEntityID, iEntry + 1, -1));
-    EXPECT_EQ(eRetCodeOK, oImpl.GetEntityMeta(iEntityID, iEntry, iFlag));
+    EXPECT_EQ(Certain::eRetCodeOK, oImpl.SetEntityMeta(iEntityID, iEntry + 1, -1));
+    EXPECT_EQ(Certain::eRetCodeOK, oImpl.GetEntityMeta(iEntityID, iEntry, iFlag));
     EXPECT_EQ(123456789001LL, iEntry);
     EXPECT_EQ(1234567890, iFlag);
 
-    EXPECT_EQ(eRetCodeOK, oImpl.SetEntityMeta(iEntityID, -1, iFlag + 1));
-    EXPECT_EQ(eRetCodeOK, oImpl.GetEntityMeta(iEntityID, iEntry, iFlag));
+    EXPECT_EQ(Certain::eRetCodeOK, oImpl.SetEntityMeta(iEntityID, -1, iFlag + 1));
+    EXPECT_EQ(Certain::eRetCodeOK, oImpl.GetEntityMeta(iEntityID, iEntry, iFlag));
     EXPECT_EQ(123456789001LL, iEntry);
     EXPECT_EQ(1234567891, iFlag);
 
-    EXPECT_EQ(eRetCodeOK, oImpl.SetEntityMeta(iEntityID, iEntry + 1, iFlag + 1));
-    EXPECT_EQ(eRetCodeOK, oImpl.GetEntityMeta(iEntityID, iEntry, iFlag));
+    EXPECT_EQ(Certain::eRetCodeOK, oImpl.SetEntityMeta(iEntityID, iEntry + 1, iFlag + 1));
+    EXPECT_EQ(Certain::eRetCodeOK, oImpl.GetEntityMeta(iEntityID, iEntry, iFlag));
     EXPECT_EQ(123456789002LL, iEntry);
     EXPECT_EQ(1234567892, iFlag);
 }
 
 TEST_F(clsDBImplTest, GetBatchTest)
 {
-    unique_ptr<dbtype::DB> oAuto(m_poLevelDB);
+    std::unique_ptr<dbtype::DB> oAuto(m_poLevelDB);
     clsDBImpl oImpl(m_poLevelDB);
 
     uint64_t iEntityID = 9123456789LL;
-    string strNextKey;
-    string strWriteBatch;
+    std::string strNextKey;
+    std::string strWriteBatch;
 
-    vector<string> strKeys;
+    std::vector<std::string> strKeys;
     for (int i = 10; i < 13; ++i)
     {
-        string strKey;
+        std::string strKey;
         EncodeInfoKey(strKey, iEntityID, (uint64_t)i);
-        EXPECT_EQ(eRetCodeOK, oImpl.Put(strKey, std::to_string(i)));
+        EXPECT_TRUE(Put(strKey, std::to_string(i)).ok());
         strKeys.push_back(strKey);
     }
 
     // strWriteBatch is NULL.
-    EXPECT_EQ(eRetCodeGetBatchErr, oImpl.GetBatch(iEntityID, strNextKey, NULL, NULL));
+    EXPECT_EQ(Certain::eRetCodeGetBatchErr, oImpl.GetBatch(iEntityID, strNextKey, NULL, NULL));
 
     // strNextKey is empty.
-    EXPECT_EQ(eRetCodeOK, oImpl.GetBatch(iEntityID, strNextKey, &strWriteBatch, NULL));
+    EXPECT_EQ(Certain::eRetCodeOK, oImpl.GetBatch(iEntityID, strNextKey, &strWriteBatch, NULL));
     EXPECT_TRUE(strWriteBatch.empty());
 
     // iMaxSize is small, and only one kv could be got in batch.
     EncodeInfoKey(strNextKey, iEntityID, 0);
-    EXPECT_EQ(eRetCodeOK, oImpl.GetBatch(iEntityID, strNextKey, &strWriteBatch, NULL, 10));
+    EXPECT_EQ(Certain::eRetCodeOK, oImpl.GetBatch(iEntityID, strNextKey, &strWriteBatch, NULL, 10));
     EXPECT_EQ(strKeys[1], strNextKey);
     EXPECT_FALSE(strWriteBatch.empty());
 
     // iMaxSize is large, and the left kv were got in batch.
     strWriteBatch.clear();
-    EXPECT_EQ(eRetCodeOK, oImpl.GetBatch(iEntityID, strNextKey, &strWriteBatch, NULL, 100));
+    EXPECT_EQ(Certain::eRetCodeOK, oImpl.GetBatch(iEntityID, strNextKey, &strWriteBatch, NULL, 100));
     EXPECT_TRUE(strNextKey.empty());
     EXPECT_FALSE(strWriteBatch.empty());
 }
 
 TEST_F(clsDBImplTest, ClearTest)
 {
-    unique_ptr<dbtype::DB> oAuto(m_poLevelDB);
+    std::unique_ptr<dbtype::DB> oAuto(m_poLevelDB);
     clsDBImpl oImpl(m_poLevelDB);
 
     uint64_t iEntityID = 9123456789LL;
-    string strNextKey;
+    std::string strNextKey;
 
-    vector<string> strKeys;
+    std::vector<std::string> strKeys;
     for (int i = 10; i < 13; ++i)
     {
-        string strKey, strValue;
+        std::string strKey, strValue;
         EncodeInfoKey(strKey, iEntityID, (uint64_t)i);
         strKeys.push_back(strKey);
-        EXPECT_EQ(eRetCodeOK, oImpl.Get(strKey, strValue));
+        EXPECT_TRUE(Get(strKey, &strValue).ok());
         EXPECT_EQ(std::to_string(i), strValue);
     }
 
     // strNextKey is empty.
-    EXPECT_EQ(eRetCodeOK, oImpl.Clear(iEntityID, strNextKey, 0));
+    EXPECT_EQ(Certain::eRetCodeOK, oImpl.Clear(iEntityID, strNextKey, 0));
     EXPECT_TRUE(strNextKey.empty());
 
     // iMaxIterateKeyCnt is small, and only one kv could be clear.
     EncodeInfoKey(strNextKey, iEntityID, 0);
-    EXPECT_EQ(eRetCodeOK, oImpl.Clear(iEntityID, strNextKey, 1));
+    EXPECT_EQ(Certain::eRetCodeOK, oImpl.Clear(iEntityID, strNextKey, 1));
     EXPECT_EQ(strKeys[1], strNextKey);
     EXPECT_FALSE(strNextKey.empty());
 
     // iMaxIterateKeyCnt is large, and the left kv were got in batch.
-    EXPECT_EQ(eRetCodeOK, oImpl.Clear(iEntityID, strNextKey, 10));
+    EXPECT_EQ(Certain::eRetCodeOK, oImpl.Clear(iEntityID, strNextKey, 10));
     EXPECT_TRUE(strNextKey.empty());
 }
 
 TEST_F(clsDBImplTest, SnapshotTest)
 {
-    unique_ptr<dbtype::DB> oAuto(m_poLevelDB);
-
-	pthread_mutex_t* poSnapshotMapMutex = new pthread_mutex_t;
-	assert(0 == pthread_mutex_init(poSnapshotMapMutex, NULL));
-
-	std::map<uint32_t, std::pair<uint64_t, std::shared_ptr<clsSnapshotWrapper>>> *poSnapshotMap =
-        new std::map<uint32_t, std::pair<uint64_t, std::shared_ptr<clsSnapshotWrapper>>>;
-    assert(poSnapshotMap != NULL);
-
-    clsDBImpl* poImpl = new clsDBImpl(m_poLevelDB, poSnapshotMapMutex, poSnapshotMap);
+    std::unique_ptr<dbtype::DB> oAuto(m_poLevelDB);
+    clsDBImpl oImpl(m_poLevelDB);
 
     uint64_t iSequenceNumber1, iSequenceNumber2 = 0;
     const dbtype::Snapshot* poSnapshot = NULL;
-    EXPECT_EQ(Certain::eRetCodeOK, poImpl->InsertSnapshot(iSequenceNumber1, poSnapshot));
-    EXPECT_EQ(Certain::eRetCodeOK, poImpl->InsertSnapshot(iSequenceNumber2, poSnapshot));
+    EXPECT_EQ(Certain::eRetCodeOK, oImpl.InsertSnapshot(iSequenceNumber1, poSnapshot));
+    EXPECT_EQ(Certain::eRetCodeOK, oImpl.InsertSnapshot(iSequenceNumber2, poSnapshot));
     // Timestamp is the same in the same second.
     EXPECT_EQ(iSequenceNumber1, iSequenceNumber2);
-    EXPECT_EQ(1, poImpl->GetSnapshotSize());
+    EXPECT_EQ(1, oImpl.GetSnapshotSize());
 
     // Two different timestamp are used as keys in map.
     sleep(1);
-    EXPECT_EQ(Certain::eRetCodeOK, poImpl->InsertSnapshot(iSequenceNumber2, poSnapshot));
+    EXPECT_EQ(Certain::eRetCodeOK, oImpl.InsertSnapshot(iSequenceNumber2, poSnapshot));
     EXPECT_EQ(iSequenceNumber1, iSequenceNumber2);
-    EXPECT_EQ(2, poImpl->GetSnapshotSize());
+    EXPECT_EQ(2, oImpl.GetSnapshotSize());
 
     // Snapshot with iSequenceNumber1 is in map, but that with (iSequenceNumber1 + 1) is not in map.
-    EXPECT_EQ(eRetCodeOK, poImpl->FindSnapshot(iSequenceNumber1, poSnapshot));
-    EXPECT_EQ(eRetCodeSnapshotNotFoundErr, poImpl->FindSnapshot(iSequenceNumber1 + 1, poSnapshot));
+    EXPECT_EQ(Certain::eRetCodeOK, oImpl.FindSnapshot(iSequenceNumber1, poSnapshot));
+    EXPECT_EQ(Certain::eRetCodeSnapshotNotFoundErr, oImpl.FindSnapshot(iSequenceNumber1 + 1, poSnapshot));
 
-    EXPECT_EQ(2, poImpl->GetSnapshotSize());
+    EXPECT_EQ(2, oImpl.GetSnapshotSize());
 
-    poImpl->EraseSnapshot();
+    oImpl.EraseSnapshot();
     // No snapshot were removed.
-    EXPECT_EQ(2, poImpl->GetSnapshotSize());
+    EXPECT_EQ(2, oImpl.GetSnapshotSize());
 
     for (int i = 0; i < 10; ++i) 
     {
         sleep(1);
-        EXPECT_EQ(Certain::eRetCodeOK, poImpl->InsertSnapshot(iSequenceNumber2, poSnapshot));
+        EXPECT_EQ(Certain::eRetCodeOK, oImpl.InsertSnapshot(iSequenceNumber2, poSnapshot));
     }
-    EXPECT_EQ(12, poImpl->GetSnapshotSize());
+    EXPECT_EQ(12, oImpl.GetSnapshotSize());
 
-    poImpl->EraseSnapshot();
+    oImpl.EraseSnapshot();
     // No snapshot were removed.
-    EXPECT_EQ(5, poImpl->GetSnapshotSize());
-
-    delete poSnapshotMapMutex, poSnapshotMapMutex = NULL;
-    delete poSnapshotMap, poSnapshotMap = NULL;
-    delete poImpl, poImpl = NULL;
+    EXPECT_EQ(5, oImpl.GetSnapshotSize());
 }
 
 int main(int argc, char** argv)

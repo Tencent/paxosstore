@@ -2,50 +2,20 @@
 
 #include <grpc++/grpc++.h>
 
-#include "Coding.h"
-#include "src/EntityInfoMng.h"
-#include "Common.h"
-#include "Configure.h"
 #include "Certain.pb.h"
-#include "Command.h"
+#include "Configure.h"
+
 #include "example.grpc.pb.h"
 #include "example/CertainUserImpl.h"
 #include "example/Client.h"
-// db
-#include "db/write_batch_internal.h"
-#include "write_batch.h"
+#include "example/Coding.h"
 
 const uint32_t clsDBImpl::kSnapshotTimeOut = 60;
 const uint32_t clsDBImpl::kSnapshotCount = 5;
 
-int clsDBImpl::Put(const string &strKey, const string &strValue, string* strWriteBatch)
-{
-    dbtype::WriteOptions tOpt;
-
-    string strRep = (strWriteBatch == NULL) ? "" : *strWriteBatch;
-    dbtype::WriteBatch oWB(strRep);
-    if (strRep.empty()) oWB.Clear();
-
-    oWB.Put(strKey, strValue);
-
-    if (strWriteBatch == NULL)
-    {
-        dbtype::Status s = m_poLevelDB->Write(tOpt, &oWB);
-        if (!s.ok())
-        {
-            return Certain::eRetCodeDBPutErr;
-        }
-    }
-    else 
-    {
-        *strWriteBatch = oWB.Data();
-    }
-
-    return 0;
-}
-
 int clsDBImpl::MultiPut(dbtype::WriteBatch* oWB) 
 {
+    clsAutoDisableHook oAuto;
     static dbtype::WriteOptions tOpt;
 
     dbtype::Status s = m_poLevelDB->Write(tOpt, oWB);
@@ -56,60 +26,17 @@ int clsDBImpl::MultiPut(dbtype::WriteBatch* oWB)
     return Certain::eRetCodeOK;
 }
 
-int clsDBImpl::Get(const string &strKey, string &strValue,
-        const dbtype::Snapshot* poSnapshot)
-{
-    dbtype::ReadOptions tOpt;
-    tOpt.snapshot = poSnapshot;
-
-    dbtype::Status s = m_poLevelDB->Get(tOpt, strKey, &strValue);
-    if (!s.ok())
-    {
-        if (s.IsNotFound())
-        {
-            return Certain::eRetCodeNotFound;
-        }
-        return Certain::eRetCodeDBGetErr;
-    }
-    return 0;
-}
-
-int clsDBImpl::Delete(const string &strKey, string* strWriteBatch)
-{
-    dbtype::WriteOptions tOpt;
-
-    string strRep = (strWriteBatch == NULL) ? "" : *strWriteBatch;
-    dbtype::WriteBatch oWB(strRep);
-    if (strRep.empty()) oWB.Clear();
-
-    oWB.Delete(strKey);
-
-    if (strWriteBatch == NULL)
-    {
-        dbtype::Status s = m_poLevelDB->Write(tOpt, &oWB);
-        if (!s.ok())
-        {
-            return Certain::eRetCodeDBPutErr;
-        }
-    }
-    else 
-    {
-        *strWriteBatch = oWB.Data();
-    }
-
-    return 0;
-}
-
 int clsDBImpl::Commit(uint64_t iEntityID, uint64_t iEntry,
-        const string &strWriteBatch)
+        const std::string &strWriteBatch)
 {
+    clsAutoDisableHook oAuto;
     dbtype::WriteBatch oWB(strWriteBatch);
     if (strWriteBatch.empty()) oWB.Clear();
 
-    string strMetaKey;
+    std::string strMetaKey;
     EncodeEntityMetaKey(strMetaKey, iEntityID);
 
-    string strMetaValue;
+    std::string strMetaValue;
     CertainPB::DBEntityMeta tDBEntityMeta;
     tDBEntityMeta.set_max_commited_entry(iEntry);
     assert(tDBEntityMeta.SerializeToString(&strMetaValue));
@@ -124,34 +51,47 @@ int clsDBImpl::Commit(uint64_t iEntityID, uint64_t iEntry,
 
 int clsDBImpl::GetEntityMeta(uint64_t iEntityID, uint64_t &iMaxCommitedEntry, uint32_t &iFlag)
 {
+    clsAutoDisableHook oAuto;
     return GetEntityMeta(iEntityID, iMaxCommitedEntry, iFlag, NULL);
 }
 
 int clsDBImpl::GetEntityMeta(uint64_t iEntityID, uint64_t &iCommitedEntry,
         uint32_t &iFlag, const dbtype::Snapshot* poSnapshot)
 {
-    string strMetaKey;
+    clsAutoDisableHook oAuto;
+    std::string strMetaKey;
     EncodeEntityMetaKey(strMetaKey, iEntityID);
 
-    string strMetaValue;
+    std::string strMetaValue;
     
-    int iRet = Get(strMetaKey, strMetaValue, poSnapshot);
-    if (iRet != 0) return iRet;
+    dbtype::ReadOptions tOpt;
+    tOpt.snapshot = poSnapshot;
+
+    dbtype::Status s = m_poLevelDB->Get(tOpt, strMetaKey, &strMetaValue);
+    if (!s.ok())
+    {
+        if (s.IsNotFound())
+        {
+            return Certain::eRetCodeNotFound;
+        }
+
+    }
 
     CertainPB::DBEntityMeta tDBEntityMeta;
     if (!tDBEntityMeta.ParseFromString(strMetaValue))
     {
-        return eRetCodeParseProtoErr;
+        return Certain::eRetCodeParseProtoErr;
     }
 
     iCommitedEntry = tDBEntityMeta.max_commited_entry();
     iFlag = tDBEntityMeta.flag();
 
-    return eRetCodeOK;
+    return Certain::eRetCodeOK;
 }
 
 int clsDBImpl::SetEntityMeta(uint64_t iEntityID, uint64_t iMaxCommitedEntry, uint32_t iFlag)
 {
+    clsAutoDisableHook oAuto;
     uint64_t iOldMCEntry = 0;
     uint32_t iOldFlag = 0;
 
@@ -170,6 +110,12 @@ int clsDBImpl::SetEntityMeta(uint64_t iEntityID, uint64_t iMaxCommitedEntry, uin
     }
     else
     {
+        if (iMaxCommitedEntry <= iOldMCEntry)
+        {
+            CertainLogFatal("iEntityID %lu iMaxCommitedEntry %lu <= %lu",
+                    iEntityID, iMaxCommitedEntry, iOldMCEntry);
+            return Certain::eRetCodeEntryErr;
+        }
         tDBEntityMeta.set_max_commited_entry(iOldMCEntry);
     }
 
@@ -182,34 +128,41 @@ int clsDBImpl::SetEntityMeta(uint64_t iEntityID, uint64_t iMaxCommitedEntry, uin
         tDBEntityMeta.set_flag(iOldFlag);
     }
 
-    string strMetaKey;
+    std::string strMetaKey;
     EncodeEntityMetaKey(strMetaKey, iEntityID);
 
-    string strMetaValue;
+    std::string strMetaValue;
     assert(tDBEntityMeta.SerializeToString(&strMetaValue));
 
-    return Put(strMetaKey, strMetaValue);
+    dbtype::WriteOptions tOpt;
+    dbtype::Status s = m_poLevelDB->Put(tOpt, strMetaKey, strMetaValue);
+    if (!s.ok())
+    {
+        return Certain::eRetCodeDBPutErr;
+    }
+    return Certain::eRetCodeOK;
 }
 
 int clsDBImpl::GetAllAndSet(uint64_t iEntityID, uint32_t iAcceptorID, uint64_t &iMaxCommitedEntry)
 {
+    clsAutoDisableHook oAuto;
     CertainLogInfo("Start GetAllAndSet()");
 
     int iRet = 0;
 
     // Step 1: Sets flags for deleting.
     {
-        clsAutoEntityLock oEntityLock(iEntityID);
+        Certain::clsAutoEntityLock oEntityLock(iEntityID);
         iRet = SetEntityMeta(iEntityID, -1, 1);
         if (iRet != 0) 
         {
             CertainLogError("SetFlag() iEntityID %lu iRet %d", iEntityID, iRet);
-            return eRetCodeSetFlagErr;
+            return Certain::eRetCodeSetFlagErr;
         }
     }
 
     // Step 2: Deletes all kvs in db related to iEntityID.
-    string strNextKey;
+    std::string strNextKey;
     EncodeInfoKey(strNextKey, iEntityID, 0);
     do 
     {
@@ -217,20 +170,21 @@ int clsDBImpl::GetAllAndSet(uint64_t iEntityID, uint32_t iAcceptorID, uint64_t &
         if (iRet != 0)
         {
             CertainLogError("Clear() iEntityID %lu iRet %d", iEntityID, iRet);
-            return eRetCodeClearDBErr;
+            return Certain::eRetCodeClearDBErr;
         }
 
         if (!strNextKey.empty()) poll(NULL, 0, 1);
     } while (!strNextKey.empty());
 
     // Step 3: Gets local machine ID.
-    Certain::clsCertainUserBase* pCertainUser = Certain::clsCertainWrapper::GetInstance()->GetCertainUser();    
+    clsCertainUserImpl* poCertainUser = dynamic_cast<clsCertainUserImpl *>(
+            Certain::clsCertainWrapper::GetInstance()->GetCertainUser());
     uint32_t iLocalAcceptorID = 0;
-    iRet = pCertainUser->GetLocalAcceptorID(iEntityID, iLocalAcceptorID);
+    iRet = poCertainUser->GetLocalAcceptorID(iEntityID, iLocalAcceptorID);
     if (iRet != 0)
     {
         CertainLogError("GetLocalAcceptorID() iEntityID %lu iRet %d", iEntityID, iRet);
-        return eRetCodeGetLocalMachineIDErr;
+        return Certain::eRetCodeGetLocalMachineIDErr;
     }
 
     grpc_init();
@@ -245,23 +199,16 @@ int clsDBImpl::GetAllAndSet(uint64_t iEntityID, uint32_t iAcceptorID, uint64_t &
             iRet != 0 && iAcceptorID != iLocalAcceptorID; 
             iAcceptorID = (iAcceptorID + 1) % iAcceptorNum)
     {
-        Certain::InetAddr_t tAddr;
-        iRet = pCertainUser->GetSvrAddr(iEntityID, iAcceptorID, tAddr);
+        std::string strAddr;
+        iRet = poCertainUser->GetServiceAddr(iEntityID, iAcceptorID, strAddr);
         if (iRet != 0)
         {
             CertainLogError("GetSvrAddr() iEntityID %lu iRet %d", iEntityID, iRet);
-            iRet = eRetCodeGetPeerSvrAddrErr;
+            iRet = Certain::eRetCodeGetPeerSvrAddrErr;
             continue;
         }
 
-        char sIP[32] = {0};
-        inet_ntop(AF_INET, (void*)&tAddr.tAddr.sin_addr, sIP, sizeof(sIP));
-
         // Step 4: Gets commited entry and sets local value.
-
-        string strAddr = (string)sIP + ":" + 
-            to_string(dynamic_cast<clsCertainUserImpl*>(pCertainUser)->GetServicePort());
-
         example::GetRequest oRequest;
         oRequest.set_entity_id(iEntityID);
         example::GetResponse oResponse;
@@ -277,35 +224,33 @@ int clsDBImpl::GetAllAndSet(uint64_t iEntityID, uint32_t iAcceptorID, uint64_t &
             if (iRet == 0) break;
         }
 
-        uint64_t iMaxCommittedEntry = oResponse.max_commited_entry();
-        uint64_t iSequenceNumber = oResponse.sequence_number();
-
         if (iRet != 0)
         {
-            CertainLogError("GetCommittedEntry() iEntityID %lu iRet %d", iEntityID, iRet);
-            iRet = eRetCodeGetPeerCommitedEntryErr;
+            CertainLogError("GetEntityMeta() iEntityID %lu iRet %d", iEntityID, iRet);
+            iRet = Certain::eRetCodeGetPeerCommitedEntryErr;
             continue;
         }
 
-        iMaxCommitedEntry = iMaxCommittedEntry;
+        iMaxCommitedEntry = oResponse.max_commited_entry();
+        uint64_t iSequenceNumber = oResponse.sequence_number();
 
         {
-            clsAutoEntityLock oEntityLock(iEntityID);
-            iRet = SetEntityMeta(iEntityID, iMaxCommittedEntry, -1);
+            Certain::clsAutoEntityLock oEntityLock(iEntityID);
+            iRet = SetEntityMeta(iEntityID, iMaxCommitedEntry, -1);
             if (iRet != 0)
             {
-                CertainLogError("SetCommittedEntry() iEntityID %lu iRet %d", iEntityID, iRet);
-                iRet = eRetCodeSetDBEntityMetaErr;
+                CertainLogError("SetEntityMeta() iEntityID %lu iRet %d", iEntityID, iRet);
+                iRet = Certain::eRetCodeSetDBEntityMetaErr;
                 continue;
             }
         }
 
         // Step 5: Gets data from peer endpoint.
-        string strNextKey;
+        std::string strNextKey;
         EncodeInfoKey(strNextKey, iEntityID, 0);
         do 
         {
-            string strWriteBatch;
+            std::string strWriteBatch;
             oRequest.set_max_size(1024 * 1024);
             oRequest.set_next_key(strNextKey);
             oRequest.set_sequence_number(iSequenceNumber);
@@ -326,7 +271,7 @@ int clsDBImpl::GetAllAndSet(uint64_t iEntityID, uint32_t iAcceptorID, uint64_t &
             if (iRet != 0)
             {
                 CertainLogError("GetAllForCertain() iEntityID %lu iRet %d", iEntityID, iRet);
-                iRet = eRetCodeGetDataFromPeerErr;
+                iRet = Certain::eRetCodeGetDataFromPeerErr;
                 break;
             }
 
@@ -338,7 +283,7 @@ int clsDBImpl::GetAllAndSet(uint64_t iEntityID, uint32_t iAcceptorID, uint64_t &
                 if (iRet != 0) 
                 {
                     CertainLogError("WriteBatch::Write() iEntityID %lu iRet %d", iEntityID, iRet);
-                    iRet = eRetCodeCommitLocalDBErr;
+                    iRet = Certain::eRetCodeCommitLocalDBErr;
                     break;
                 }
             }
@@ -349,7 +294,7 @@ int clsDBImpl::GetAllAndSet(uint64_t iEntityID, uint32_t iAcceptorID, uint64_t &
         if (iRet != 0) 
         {
             // Step 6: Re-deletes all kvs in db related to iEntityID.
-            string strNextKey;
+            std::string strNextKey;
             EncodeInfoKey(strNextKey, iEntityID, 0);
             do
             {
@@ -357,7 +302,7 @@ int clsDBImpl::GetAllAndSet(uint64_t iEntityID, uint32_t iAcceptorID, uint64_t &
                 if (iDelRet != 0) 
                 {
                     CertainLogError("Re-clear() iEntityID %lu iRet %d", iEntityID, iRet);
-                    iRet = eRetCodeReClearDBErr;
+                    iRet = Certain::eRetCodeReClearDBErr;
                 }
 
                 if (!strNextKey.empty()) poll(NULL, 0, 1);
@@ -373,29 +318,30 @@ int clsDBImpl::GetAllAndSet(uint64_t iEntityID, uint32_t iAcceptorID, uint64_t &
 
     // Step 7: Clear flag.
     {
-        clsAutoEntityLock oEntityLock(iEntityID);
+        Certain::clsAutoEntityLock oEntityLock(iEntityID);
         iRet = SetEntityMeta(iEntityID, -1, 0);
         if (iRet != 0)
         {
             CertainLogError("SetFlag() iEntityID %lu iRet %d", iEntityID, iRet);
-            return eRetCodeClearFlagErr;
+            return Certain::eRetCodeClearFlagErr;
         }
     }
 
     CertainLogInfo("Finish GetAllAndSet()");
 
-    return eRetCodeOK;
+    return Certain::eRetCodeOK;
 }
 
-int clsDBImpl::GetBatch(uint64_t iEntityID, string& strNextKey, string* strWriteBatch, 
+int clsDBImpl::GetBatch(uint64_t iEntityID, std::string& strNextKey, std::string* strWriteBatch, 
         const dbtype::Snapshot* poSnapshot, uint32_t iMaxSize)
 {
+    clsAutoDisableHook oAuto;
     if (strWriteBatch == NULL)
     {
         return Certain::eRetCodeGetBatchErr;
     }
 
-    string strRep = (strWriteBatch == NULL) ? "" : *strWriteBatch;
+    std::string strRep = (strWriteBatch == NULL) ? "" : *strWriteBatch;
     dbtype::WriteBatch oWB(strRep);
     if (strRep.empty()) oWB.Clear();
 
@@ -405,7 +351,7 @@ int clsDBImpl::GetBatch(uint64_t iEntityID, string& strNextKey, string* strWrite
 
     std::unique_ptr<dbtype::Iterator> iter(m_poLevelDB->NewIterator(tOpt));
 
-    string strStartKey = strNextKey;
+    std::string strStartKey = strNextKey;
     strNextKey.clear();
     if (strStartKey.empty()) return Certain::eRetCodeOK;
 
@@ -436,8 +382,9 @@ int clsDBImpl::GetBatch(uint64_t iEntityID, string& strNextKey, string* strWrite
     return Certain::eRetCodeOK;
 }
 
-int clsDBImpl::Clear(uint64_t iEntityID, string& strNextKey, uint32_t iMaxIterateKeyCnt)
+int clsDBImpl::Clear(uint64_t iEntityID, std::string& strNextKey, uint32_t iMaxIterateKeyCnt)
 {
+    clsAutoDisableHook oAuto;
     dbtype::WriteBatch oWB;
     oWB.Clear();
 
@@ -445,7 +392,7 @@ int clsDBImpl::Clear(uint64_t iEntityID, string& strNextKey, uint32_t iMaxIterat
 
     std::unique_ptr<dbtype::Iterator> iter(m_poLevelDB->NewIterator(tROpt));
 
-    string strStartKey = strNextKey;
+    std::string strStartKey = strNextKey;
     strNextKey.clear();
     if (strStartKey.empty()) return Certain::eRetCodeOK;
 
@@ -482,12 +429,12 @@ int clsDBImpl::Clear(uint64_t iEntityID, string& strNextKey, uint32_t iMaxIterat
 
 int clsDBImpl::InsertSnapshot(uint64_t& iSequenceNumber, const dbtype::Snapshot* poSnapshot)
 {
-    assert(m_poSnapshotMapMutex != NULL && m_poSnapshotMap != NULL);
+    clsAutoDisableHook oAuto;
 
-	assert(0 == pthread_mutex_lock(m_poSnapshotMapMutex));
+    Certain::clsThreadLock oLock(&m_poSnapshotMapMutex);
     uint32_t iTimeStamp = time(0);
-    auto iter = m_poSnapshotMap->find(iTimeStamp);
-    if (iter != m_poSnapshotMap->end())
+    auto iter = m_poSnapshotMap.find(iTimeStamp);
+    if (iter != m_poSnapshotMap.end())
     {
         iSequenceNumber = iter->second.first;
         poSnapshot = iter->second.second->GetSnapshot();
@@ -497,71 +444,70 @@ int clsDBImpl::InsertSnapshot(uint64_t& iSequenceNumber, const dbtype::Snapshot*
         poSnapshot = m_poLevelDB->GetSnapshot();
         iSequenceNumber = reinterpret_cast<const dbtype::SnapshotImpl*>(poSnapshot)->number_;
 
-        for (auto iter = m_poSnapshotMap->begin(); iter != m_poSnapshotMap->end(); ++iter)
+        for (auto iter = m_poSnapshotMap.begin(); iter != m_poSnapshotMap.end(); ++iter)
         {
             if (iter->second.first == iSequenceNumber)
             {
-                shared_ptr<clsSnapshotWrapper> poWrapper = iter->second.second;
-                m_poSnapshotMap->insert(make_pair(iTimeStamp, make_pair(iSequenceNumber, poWrapper)));
-	            assert(0 == pthread_mutex_unlock(m_poSnapshotMapMutex));
+                std::shared_ptr<clsSnapshotWrapper> poWrapper = iter->second.second;
+                m_poSnapshotMap.insert(std::make_pair(iTimeStamp, std::make_pair(iSequenceNumber, poWrapper)));
                 return Certain::eRetCodeOK;
             }
         }
 
         std::shared_ptr<clsSnapshotWrapper> poWrapper = make_shared<clsSnapshotWrapper>(m_poLevelDB, poSnapshot);
-        m_poSnapshotMap->insert(make_pair(iTimeStamp, make_pair(iSequenceNumber, poWrapper)));
+        m_poSnapshotMap.insert(std::make_pair(iTimeStamp, std::make_pair(iSequenceNumber, poWrapper)));
     }
-	assert(0 == pthread_mutex_unlock(m_poSnapshotMapMutex));
     
     return Certain::eRetCodeOK;
 }
 
 int clsDBImpl::FindSnapshot(uint64_t iSequenceNumber, const dbtype::Snapshot* poSnapshot)
 {
-    assert(m_poSnapshotMapMutex != NULL && m_poSnapshotMap != NULL);
+    clsAutoDisableHook oAuto;
 
-	assert(0 == pthread_mutex_lock(m_poSnapshotMapMutex));
-    for (auto iter = m_poSnapshotMap->begin(); iter != m_poSnapshotMap->end(); ++iter)
+    Certain::clsThreadLock oLock(&m_poSnapshotMapMutex);
+    for (auto iter = m_poSnapshotMap.begin(); iter != m_poSnapshotMap.end(); ++iter)
     {
         if (iter->second.first == iSequenceNumber)
         {
             poSnapshot = iter->second.second->GetSnapshot();
-	        assert(0 == pthread_mutex_unlock(m_poSnapshotMapMutex));
             return Certain::eRetCodeOK;
         }
     }
-	assert(0 == pthread_mutex_unlock(m_poSnapshotMapMutex));
     
     return Certain::eRetCodeSnapshotNotFoundErr;
 }
 
 void clsDBImpl::EraseSnapshot()
 {
-    assert(m_poSnapshotMapMutex != NULL && m_poSnapshotMap != NULL);
+    clsAutoDisableHook oAuto;
 
-	assert(0 == pthread_mutex_lock(m_poSnapshotMapMutex));
+    Certain::clsThreadLock oLock(&m_poSnapshotMapMutex);
     uint32_t iTimeStamp = time(0);
-    uint32_t iCount = m_poSnapshotMap->size();
-    for (auto iter = m_poSnapshotMap->begin(); iter != m_poSnapshotMap->end(); )
+    uint32_t iCount = m_poSnapshotMap.size();
+    for (auto iter = m_poSnapshotMap.begin(); iter != m_poSnapshotMap.end(); )
     {
         if ((iter->first + kSnapshotTimeOut < iTimeStamp) || (iCount > kSnapshotCount))
         {
             if (iCount > 0) --iCount;
-		    m_poSnapshotMap->erase(iter++);
+		    m_poSnapshotMap.erase(iter++);
         } else {
             iter++;
         }
     }
-	assert(0 == pthread_mutex_unlock(m_poSnapshotMapMutex));
 }
 
 uint64_t clsDBImpl::GetSnapshotSize()
 {
-    assert(m_poSnapshotMapMutex != NULL && m_poSnapshotMap != NULL);
+    clsAutoDisableHook oAuto;
 
-	assert(0 == pthread_mutex_lock(m_poSnapshotMapMutex));
-    uint64_t size = m_poSnapshotMap->size();
-	assert(0 == pthread_mutex_unlock(m_poSnapshotMapMutex));
+    Certain::clsThreadLock oLock(&m_poSnapshotMapMutex);
+    uint64_t size = m_poSnapshotMap.size();
 
     return size;
+}
+
+dbtype::DB *clsDBImpl::GetDB()
+{
+    return m_poLevelDB;
 }

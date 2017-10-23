@@ -2,7 +2,6 @@
 #define CERTAIN_INCLUDE_CERTAIN_USER_BASE_H_
 
 #include "Command.h"
-#include "PerfLog.h"
 #include "AsyncPipeMng.h"
 #include "AsyncQueueMng.h"
 #include "UUIDGroupMng.h"
@@ -107,11 +106,6 @@ public:
     virtual int UpdateServerAddr(Certain::clsConfigure *poConf)
     {
         // Not required.
-        return 0;
-    }
-
-    virtual int GetSvrAddr(uint64_t iEntityID, uint32_t iAcceptorID, Certain::InetAddr_t & tAddr)
-    {
         return 0;
     }
 };

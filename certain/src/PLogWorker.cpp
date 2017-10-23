@@ -656,14 +656,6 @@ void clsPLogWorker::DoWithPaxosCmd(clsPaxosCmd *poPaxosCmd)
 {
     int iRet;
 
-    iRet = clsPerfLog::GetInstance()->PutPLogSeq(poPaxosCmd->GetEntityID(),
-            poPaxosCmd->GetEntry(), poPaxosCmd->GetSrcRecord());
-    if (iRet != 0)
-    {
-        CertainLogFatal("PerfLog failed ret %d", iRet);
-        Assert(false);
-    }
-
     CertainLogInfo("PLog_seq cmd: %s", poPaxosCmd->GetTextCmd().c_str());
 
     if (poPaxosCmd->IsPLogLoad())
@@ -715,7 +707,7 @@ void *clsPLogWorker::WakeUpRoutine(void * arg)
 void *clsPLogWorker::PLogRoutine(void * arg)
 {
     PLogRoutine_t * pPLogRoutine = (PLogRoutine_t *)arg;
-    //co_enable_hook_sys();
+    co_enable_hook_sys();
 
     clsCertainUserBase * pCertainUser = clsCertainWrapper::GetInstance()->GetCertainUser();
     pCertainUser->SetRoutineID(pPLogRoutine->iRoutineID);
@@ -804,7 +796,7 @@ void clsPLogWorker::Run()
     SetThreadTitle("plog_%u_%u", iLocalServerID, m_iWorkerID);
     CertainLogInfo("plog_%u_%u run", iLocalServerID, m_iWorkerID);
 
-    //co_enable_hook_sys();
+    co_enable_hook_sys();
     stCoEpoll_t * ev = co_get_epoll_ct();
     s_epoll_stat = (EpollRunStat_t*)calloc( sizeof(EpollRunStat_t),1 ); 
     //co_set_eventloop_stat( OnEpollStart,OnEpollEnd );

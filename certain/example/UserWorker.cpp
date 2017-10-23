@@ -28,37 +28,38 @@ int clsUserWorker::CoEpollTick(void * arg)
         }
     }
 
+    pUserWorker->m_poCertainUserImpl->TickHandleCallBack();
+
     return 0;
 }
 
 void * clsUserWorker::UserRoutine(void * arg)
 {
     UserRoutine_t * pUserRoutine = (UserRoutine_t *)arg;
+    clsUserWorker * pUserWorker = (clsUserWorker *)pUserRoutine->pSelf;
     co_enable_hook_sys();
 
-    Certain::clsCertainUserBase * pCertainUser = Certain::clsCertainWrapper::GetInstance()->GetCertainUser();
-    pCertainUser->SetRoutineID(pUserRoutine->iRoutineID);
+    pUserWorker->m_poCertainUserImpl->SetRoutineID(pUserRoutine->iRoutineID);
 
-    while(1)
+    while (1)
     {
-        clsUserWorker * pUserWorker = (clsUserWorker * )pUserRoutine->pSelf;
-
-        if(!pUserRoutine->bHasJob)
+        if (!pUserRoutine->bHasJob)
         {
             pUserWorker->m_poCoWorkList->push(pUserRoutine);
             co_yield_ct();
             continue;
         }
         pUserRoutine->bHasJob = false;
-        if(pUserRoutine->pData == NULL)
+
+        if (pUserRoutine->pData == NULL)
         {
             continue;
         }
 
         clsCallDataBase *poCallData = (clsCallDataBase *)pUserRoutine->pData;
-        co_disable_hook_sys();
         poCallData->Proceed();
 
+        co_disable_hook_sys();
         poCallData->Finish(false);
         co_enable_hook_sys();
 
@@ -95,5 +96,5 @@ void clsUserWorker::Run()
     printf("UserWorker idx %d 50 Routine\n", m_iWorkerID);
     CertainLogImpt("UserWorker idx %d 50 Routine", m_iWorkerID);
 
-    co_eventloop( ev, CoEpollTick, this);
+    co_eventloop(ev, CoEpollTick, this);
 }

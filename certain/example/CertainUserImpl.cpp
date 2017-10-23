@@ -25,13 +25,36 @@ int clsCertainUserImpl::InitServerAddr(Certain::clsConfigure *poConf)
     return 0;
 }
 
-int clsCertainUserImpl::GetSvrAddr(uint64_t iEntityID, uint32_t iAcceptorID, Certain::InetAddr_t & tAddr)
+int clsCertainUserImpl::GetServiceAddr(uint64_t iEntityID,
+        uint32_t iAcceptorID, std::string &strAddr)
 {
     uint32_t iServerID = 0;
     GetServerID(iEntityID, iAcceptorID, iServerID);
     if (iServerID >= m_poConf->GetServerNum()) assert(false);
 
-    tAddr = m_poConf->GetServerAddrs()[iServerID];
+    Certain::InetAddr_t tAddr = m_poConf->GetServerAddrs()[iServerID];
+
+    char sIP[32] = {0};
+    inet_ntop(AF_INET, (void*)&tAddr.tAddr.sin_addr, sIP, sizeof(sIP));
+
+    strAddr = (std::string)sIP + ":" + std::to_string(50050 + iAcceptorID);
 
     return 0;
+}
+
+void clsCertainUserImpl::LockEntity(uint64_t iEntityID, void **ppLockInfo)
+{
+    *(uintptr_t *)ppLockInfo = iEntityID;
+    m_poCoHashLock->Lock(iEntityID);
+}
+
+void clsCertainUserImpl::UnLockEntity(void *ppLockInfo)
+{
+    uint64_t iEntityID = uintptr_t(ppLockInfo);
+    m_poCoHashLock->Unlock(iEntityID);
+}
+
+void clsCertainUserImpl::TickHandleCallBack()
+{
+    m_poCoHashLock->CheckAllLock();
 }

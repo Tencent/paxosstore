@@ -4,6 +4,7 @@
 #include "Common.h"
 #include "Configure.h"
 #include "EntryInfoMng.h"
+#include "LeasePolicy.h"
 
 namespace Certain
 {
@@ -19,12 +20,12 @@ struct EntityInfo_t
     uint64_t iLocalPreAuthEntry;
     uint64_t iCatchUpEntry;
     uint64_t iValueIDGenerator;
-    uint64_t iLeaseExpiredTimeMS;
     uint64_t iNotifyedEntry;
     uint64_t iGetAllFinishTimeMS;
 
     clsClientCmd *poClientCmd;
     clsPaxosCmd **apWaitingMsg;
+    clsLeasePolicy *poLeasePolicy;
 
     CIRCLEQ_HEAD(EntryList_t, EntryInfo_t) tEntryList;
 
@@ -177,9 +178,6 @@ public:
     bool CheckAndEliminate();
 
     EntityInfo_t *PeekOldest();
-
-    void UpdateSuggestedLease(EntityInfo_t *ptEntityInfo);
-    bool IsWaitLeaseTimeout(EntityInfo_t *ptEntityInfo);
 
     bool Refresh(EntityInfo_t *ptEntityInfo);
 

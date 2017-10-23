@@ -3,14 +3,25 @@
 #include <grpc/support/log.h>
 
 #include "example.grpc.pb.h"
-#include "example/DBImpl.h"
 #include "example/Coding.h"
-
+#include "example/CoHashLock.h"
+#include "example/DBImpl.h"
 #include "example/GrpcHelper.h"
+#include "example/TemporaryTable.h"
 
-#include "src/EntityInfoMng.h"
+struct QueueItem_t
+{
+    int iOper;
+    uint64_t iEntityID;
+    void *poRequest;
+    void *poResponse;
+    volatile int iRet;
+};
 
-using namespace Certain;
+enum BatchStatus
+{
+    WAITING = -9001,
+};
 
 class clsServiceImpl
 {
@@ -49,6 +60,20 @@ public:
     int RecoverData(grpc::ServerContext& oContext,
             const example::GetRequest& oRequest,
             example::GetResponse& oResponse);
+
+private:
+    int BatchFunc(int iOper,
+            const example::CardRequest& oRequest,
+            example::CardResponse& oResponse);
+
+    void BatchReturn(std::queue<QueueItem_t*>* poQueue, int iRet);
+
+    void HandleSingleCommand(clsTemporaryTable* poTable, QueueItem_t* poItem,
+            std::vector<uint64_t>* poVecUUID);
+
+    Certain::clsMutex m_poBatchMapMutex;
+    // iEntityID -> queue<QueueItem>
+    std::unordered_map<uint64_t, std::queue<QueueItem_t*>> m_oBatchMap;
 };
 
 DEFINE_CALL_DATA(example, CardServer, Echo, EchoRequest, EchoResponse);

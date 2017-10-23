@@ -33,12 +33,8 @@ int clsConnInfoMng::Init(clsConfigure *poConf)
     m_iServerNum = m_poConf->GetServerNum();
     m_iLocalServerID = m_poConf->GetLocalServerID();
 
-    Assert(m_tExtConnQueue.empty());
-
     Assert(m_vecIntConnQueue.size() == 0);
     m_vecIntConnQueue.resize(m_iServerNum);
-
-    m_iIOScheduler = 0;
 
     return 0;
 }
@@ -46,11 +42,6 @@ int clsConnInfoMng::Init(clsConfigure *poConf)
 void clsConnInfoMng::Destroy()
 {
     m_vecIntConnQueue.clear();
-
-    while (!m_tExtConnQueue.empty())
-    {
-        m_tExtConnQueue.pop();
-    }
 }
 
 int clsConnInfoMng::PutByOneThread(uint32_t iServerID,
@@ -67,16 +58,8 @@ int clsConnInfoMng::PutByOneThread(uint32_t iServerID,
             iServerID, tConnInfo.ToString().c_str());
 
     clsThreadLock oLock(&m_oMutex);
-
-    if (iServerID == INVALID_SERVER_ID)
-    {
-        m_tExtConnQueue.push(tConnInfo);
-    }
-    else
-    {
-        AssertLess(iServerID, m_iServerNum);
-        m_vecIntConnQueue[iServerID].push(tConnInfo);
-    }
+    AssertLess(iServerID, m_iServerNum);
+    m_vecIntConnQueue[iServerID].push(tConnInfo);
 
     return 0;
 }
@@ -166,26 +149,10 @@ int clsConnInfoMng::TakeByMultiThread(uint32_t iIOWorkerID,
         }
     }
 
-    if (iIOWorkerID != m_iIOScheduler)
-    {
-        return -1;
-    }
-    m_iIOScheduler = (m_iIOScheduler + 1) % m_poConf->GetIOWorkerNum();
-
-    if (!m_tExtConnQueue.empty())
-    {
-        tConnInfo = m_tExtConnQueue.front();
-        m_tExtConnQueue.pop();
-
-        iServerID = INVALID_SERVER_ID;
-
-        return 0;
-    }
-
-    return -2;
+    return -1;
 }
 
-int clsConnWorker::AddListen(bool bInternal, const InetAddr_t &tLocalAddr)
+int clsConnWorker::AddListen(const InetAddr_t &tLocalAddr)
 {
     int iRet;
     int iBacklog = 8096;
@@ -208,7 +175,7 @@ int clsConnWorker::AddListen(bool bInternal, const InetAddr_t &tLocalAddr)
             tLocalAddr.ToString().c_str(), iFD);
 
     clsListenContext *poContext = new clsListenContext(
-            iFD, m_poListenHandler, tLocalAddr, bInternal);
+            iFD, m_poListenHandler, tLocalAddr);
 
     iRet = m_poEpollIO->Add(poContext);
     if (iRet != 0)
@@ -317,29 +284,14 @@ int clsConnWorker::AcceptOneFD(clsListenContext *poContext)
 
     CertainLogInfo("accept conn %s", tConnInfo.ToString().c_str());
 
-    if (poContext->IsInternal())
+    clsNegoContext *poNegoCtx = new clsNegoContext(m_poNegoHandler,
+            tConnInfo);
+    iRet = m_poEpollIO->Add(poNegoCtx);
+    if (iRet != 0)
     {
-        clsNegoContext *poNegoCtx = new clsNegoContext(m_poNegoHandler,
-                tConnInfo);
-        iRet = m_poEpollIO->Add(poNegoCtx);
-        if (iRet != 0)
-        {
-            CertainLogError("m_poEpollIO->Add ret %d", iRet);
-            AssertEqual(close(tConnInfo.iFD), 0);
-            delete poNegoCtx, poNegoCtx = NULL;
-        }
-    }
-    else
-    {
-        // (TODO)rock: remove
-        iRet = clsConnInfoMng::GetInstance()->PutByOneThread(
-                INVALID_SERVER_ID, tConnInfo);
-        if (iRet != 0)
-        {
-            CertainLogError("clsConnInfoMng PutByOneThread ret %d", iRet);
-
-            AssertEqual(close(tConnInfo.iFD), 0);
-        }
+        CertainLogError("m_poEpollIO->Add ret %d", iRet);
+        AssertEqual(close(tConnInfo.iFD), 0);
+        delete poNegoCtx, poNegoCtx = NULL;
     }
 
     return 0;
@@ -365,8 +317,7 @@ int clsConnWorker::HandleListen(clsListenContext *poContext)
             iRet = close(iFD);
             AssertEqual(iRet, 0);
 
-            iRet = AddListen(poContext->IsInternal(),
-                    poContext->GetLocalAddr());
+            iRet = AddListen(poContext->GetLocalAddr());
             AssertEqual(iRet, 0);
 
             return -1;
@@ -442,9 +393,7 @@ int clsConnWorker::AddAllListen()
     vector<InetAddr_t> vecServerAddr = m_poConf->GetServerAddrs();
     AssertLess(iLocalServerID, vecServerAddr.size());
 
-    InetAddr_t tInternal = vecServerAddr[iLocalServerID];
-
-    iRet = AddListen(true, tInternal);
+    iRet = AddListen(vecServerAddr[iLocalServerID]);
     if (iRet != 0)
     {
         CertainLogError("AddListen ret %d", iRet);

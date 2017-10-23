@@ -14,21 +14,17 @@ class clsListenContext : public clsFDBase
 {
 private:
     InetAddr_t m_tLocalAddr;
-    bool m_bInternal;
 
 public:
     clsListenContext(int iFD,
             clsIOHandlerBase *poIOHandler,
-            const InetAddr_t &tLocalAddr,
-            bool bInternal) :
+            const InetAddr_t &tLocalAddr) :
         clsFDBase(iFD, poIOHandler, -1, (EPOLLIN | EPOLLET)),
-        m_tLocalAddr(tLocalAddr),
-        m_bInternal(bInternal) { }
+        m_tLocalAddr(tLocalAddr) { }
 
     virtual ~clsListenContext() { }
 
     InetAddr_t GetLocalAddr() { return m_tLocalAddr; }
-    BOOLEN_IS_SET(Internal);
 };
 
 class clsListenHandler : public clsIOHandlerBase
@@ -87,11 +83,7 @@ private:
 
     clsMutex m_oMutex;
 
-    queue<ConnInfo_t> m_tExtConnQueue;
     vector< queue<ConnInfo_t> > m_vecIntConnQueue;
-
-    // (TODO)rock: remove and add clsIOScheduler
-    uint32_t m_iIOScheduler;
 
     friend class clsSingleton<clsConnInfoMng>;
     clsConnInfoMng() { }
@@ -118,7 +110,7 @@ private:
     clsListenHandler *m_poListenHandler;
     clsNegoHandler *m_poNegoHandler;
 
-    int AddListen(bool bInternal, const InetAddr_t &tInetAddr);
+    int AddListen(const InetAddr_t &tInetAddr);
     int AddAllListen();
 
     int RecvNegoMsg(clsNegoContext *poNegoCtx);

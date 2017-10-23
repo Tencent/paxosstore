@@ -670,7 +670,7 @@ int clsEntityWorker::DoWithClientCmd(clsClientCmd *poCmd)
         OSS::ReportPaxosForWrite();
     }
 
-    if (m_poEntityMng->IsWaitLeaseTimeout(ptEntityInfo))
+    if (ptEntityInfo->poLeasePolicy->GetLeaseTimeoutMS() > 0)
     {
         if (ptEntityInfo->iLocalAcceptorID != 0)
         {
@@ -960,7 +960,7 @@ int clsEntityWorker::RangeRecoverFromPLog(clsRecoverCmd *poCmd)
             clsPaxosCmd *po = new clsPaxosCmd(GetPeerAcceptorID(ptEntityInfo), iEntityID, 0, NULL, NULL);
 
             int iRet = clsGetAllWorker::EnterReqQueue(po);
-            if(iRet != 0)
+            if (iRet != 0)
             {
                 delete po, po = NULL;
             }
@@ -1264,11 +1264,6 @@ int clsEntityWorker::LimitedCatchUp(EntityInfo_t *ptEntityInfo,
             continue;
         }
 
-        if (ptInfo->iActiveAcceptorID == INVALID_ACCEPTOR_ID)
-        {
-            ptInfo->iActiveAcceptorID = ptEntityInfo->iActiveAcceptorID;
-        }
-
         if (!ptInfo->bUncertain && !m_poEntryMng->WaitForTimeout(ptInfo))
         {
             if (!ActivateEntry(ptInfo))
@@ -1534,7 +1529,7 @@ int clsEntityWorker::UpdateRecord(clsPaxosCmd *poPaxosCmd)
         if (iEntry > ptEntityInfo->iMaxChosenEntry
                 && poMachine->IsRemoteCompeting())
         {
-            m_poEntityMng->UpdateSuggestedLease(ptEntityInfo);
+            ptEntityInfo->poLeasePolicy->OnRecvMsgSuccessfully();
         }
     }
     else
@@ -2161,7 +2156,7 @@ int clsEntityWorker::DoWithRecoverCmd(clsRecoverCmd *poCmd)
                 clsPaxosCmd *po = new clsPaxosCmd(GetPeerAcceptorID(ptEntityInfo), iEntityID, 0, NULL, NULL);
 
                 int iRet = clsGetAllWorker::EnterReqQueue(po);
-                if(iRet != 0)
+                if (iRet != 0)
                 {
                     delete po, po = NULL;
                     InvalidClientCmd(poCmd, eRetCodeQueueFailed);
@@ -2558,7 +2553,8 @@ int clsEntityWorker::DoWithPaxosCmdFromPLog(clsPaxosCmd *poPaxosCmd)
             // Remove Lease for the slave when chosen.
             if (ptEntityInfo->iLocalAcceptorID != 0)
             {
-                ptEntityInfo->iLeaseExpiredTimeMS = 0;
+                ptEntityInfo->poLeasePolicy->Reset(
+                        m_poConf->GetLeaseDurationMS());
             }
         }
 
@@ -2796,28 +2792,8 @@ bool clsEntityWorker::ActivateEntry(EntryInfo_t *ptInfo)
             return false;
         }
 
-        uint32_t iDestAcceptorID = INVALID_ACCEPTOR_ID;
-
-        while (1)
-        {
-            if (ptInfo->iActiveAcceptorID == INVALID_ACCEPTOR_ID)
-            {
-                ptInfo->iActiveAcceptorID = 0;
-            }
-
-            iDestAcceptorID = ptInfo->iActiveAcceptorID % m_iAcceptorNum;
-
-            if (iDestAcceptorID != ptEntityInfo->iLocalAcceptorID)
-            {
-                break;
-            }
-
-            // (TODO)rock: check if online
-            ptInfo->iActiveAcceptorID++;
-        }
-
         // Machine A fix the entry only.
-        if (ptInfo->iActiveAcceptorID > m_iAcceptorNum && ptEntityInfo->iLocalAcceptorID == 0)
+        if (ptInfo->iInteractCnt > 2)
         {
             CertainLogError("May need fix E(%lu, %lu) st %d",
                     iEntityID, iEntry, ptInfo->poMachine->GetEntryState());
@@ -2833,50 +2809,48 @@ bool clsEntityWorker::ActivateEntry(EntryInfo_t *ptInfo)
             }
         }
 
+        if (ptInfo->iInteractCnt > 3)
+        {
+            CleanUpEntry(ptInfo);
+            return false;
+        }
+
+        ptInfo->iInteractCnt++;
+        uint32_t iActiveAcceptorID = GetPeerAcceptorID(ptEntityInfo);
+
         AssertEqual(ptInfo->bRemoteUpdated, false);
         ptInfo->bRemoteUpdated = true;
-        SyncEntryRecord(ptInfo, iDestAcceptorID, 0);
+        SyncEntryRecord(ptInfo, iActiveAcceptorID, 0);
         ptInfo->bRemoteUpdated = false;
 
         OSS::ReportSingleCatchUp();
 
         m_poEntryMng->AddTimeout(ptInfo, 15000);
 
-        CertainLogError("sync acceptor %u %u E(%lu, %lu) st %d",
-                iDestAcceptorID, ptInfo->iActiveAcceptorID, iEntityID, iEntry,
-                ptInfo->poMachine->GetEntryState());
-
-        ptInfo->iActiveAcceptorID++;
+        CertainLogError("sync acceptor %u E(%lu, %lu) st %d",
+                iActiveAcceptorID, iEntityID, iEntry, ptInfo->poMachine->GetEntryState());
 
         return true;
     }
 
-    if (ptInfo->iActiveAcceptorID == INVALID_ACCEPTOR_ID)
-    {
-        ptInfo->iActiveAcceptorID = 0;
-    }
-
-    if (ptInfo->iActiveAcceptorID >= m_iAcceptorNum * 2)
+    if (ptInfo->iInteractCnt > 3)
     {
         CleanUpEntry(ptInfo);
         return false;
     }
-    else
-    {
-        ptInfo->iActiveAcceptorID += m_iAcceptorNum;
 
-        const EntryRecord_t &tRecord = poMachine->GetRecord(iLocalAcceptorID);
-        CertainLogError("Broadcast E(%lu, %lu) st %u iMaxChosenEntry %lu r[%u] %s",
-                iEntityID, iEntry, poMachine->GetEntryState(),
-                ptEntityInfo->iMaxChosenEntry, iLocalAcceptorID,
-                EntryRecordToString(tRecord).c_str());
+    const EntryRecord_t &tRecord = poMachine->GetRecord(iLocalAcceptorID);
+    CertainLogError("Broadcast E(%lu, %lu) st %u iMaxChosenEntry %lu r[%u] %s",
+            iEntityID, iEntry, poMachine->GetEntryState(),
+            ptEntityInfo->iMaxChosenEntry, iLocalAcceptorID,
+            EntryRecordToString(tRecord).c_str());
 
-        BroadcastToRemote(ptInfo, ptInfo->poMachine);
-        OSS::ReportTimeoutBroadcast();
+    ptInfo->iInteractCnt++;
+    BroadcastToRemote(ptInfo, ptInfo->poMachine);
+    OSS::ReportTimeoutBroadcast();
 
-        // Wait longer, as broadcast is heavy, and many candidates to reply.
-        m_poEntryMng->AddTimeout(ptInfo, 30000);
-    }
+    // Wait longer, as broadcast is heavy, and many candidates to reply.
+    m_poEntryMng->AddTimeout(ptInfo, 30000);
 
     return true;
 }
@@ -2988,6 +2962,12 @@ int clsEntityWorker::RecoverEntityInfo(uint64_t iEntityID, const EntityMeta_t &t
 
 uint32_t clsEntityWorker::GetPeerAcceptorID(EntityInfo_t *ptEntityInfo)
 {
+    if (ptEntityInfo->iActiveAcceptorID != INVALID_ACCEPTOR_ID)
+    {
+        return ptEntityInfo->iActiveAcceptorID;
+    }
+
+    // (TODO)rock: Get active one
     uint32_t iPeerAcceptorID = ptEntityInfo->iLocalAcceptorID + 1;
     if (iPeerAcceptorID >= m_poConf->GetAcceptorNum())
     {

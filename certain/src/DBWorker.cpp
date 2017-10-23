@@ -285,7 +285,7 @@ void clsDBWorker::RunApplyTask(clsClientCmd *poCmd, uint64_t &iPLogGetCnt)
 void *clsDBWorker::DBRoutine(void * arg)
 {
     DBRoutine_t * pDBRoutine = (DBRoutine_t *)arg;
-    //co_enable_hook_sys();
+    co_enable_hook_sys();
 
     clsCertainUserBase * pCertainUser = clsCertainWrapper::GetInstance()->GetCertainUser();
     pCertainUser->SetRoutineID(pDBRoutine->iRoutineID);
@@ -403,7 +403,7 @@ void clsDBWorker::Run()
     SetThreadTitle("db_%u_%u", iLocalServerID, m_iWorkerID);
     CertainLogInfo("db_%u_%u run", iLocalServerID, m_iWorkerID);
 
-    //co_enable_hook_sys();
+    co_enable_hook_sys();
     stCoEpoll_t * ev = co_get_epoll_ct();
 
     for (int i = 0; i < int(m_poConf->GetDBRoutineCnt()); ++i)

@@ -234,7 +234,6 @@ private:
     string m_strFilePath;
 
     string m_strCertainPath;
-    string m_strPerfLogPath;
     string m_strLogPath;
 
     map<string, clsValueBase *> m_tKeyMap;
@@ -266,15 +265,13 @@ private:
     uint32_t m_iUseCertainLog;
     uint32_t m_iUseConsole;
     uint32_t m_iLogLevel;
-    uint32_t m_iUsePerfLog;
     uint32_t m_iCmdTimeoutMS;
     uint32_t m_iRecoverTimeoutMS;
     uint32_t m_iLocalAcceptFirst;
-    uint32_t m_iMaxEntityBitNum;
+    uint32_t m_iMaxEntityNum;
     uint32_t m_iMaxMemEntityNum;
     uint32_t m_iMaxMemEntryNum;
-    uint32_t m_iMaxLeaseMS;
-    uint32_t m_iMinLeaseMS;
+    uint32_t m_iLeaseDurationMS;
     uint32_t m_iEnableCheckSum;
     uint32_t m_iDBRoutineCnt;
     uint32_t m_iGetAllRoutineCnt;
@@ -382,15 +379,13 @@ public:
     UINT32_GET_SET(UseCertainLog);
     UINT32_GET_SET(UseConsole);
     UINT32_GET_SET(LogLevel);
-    UINT32_GET_SET(UsePerfLog);
     UINT32_GET_SET(CmdTimeoutMS);
     UINT32_GET_SET(RecoverTimeoutMS);
     UINT32_GET_SET(LocalAcceptFirst);
-    UINT32_GET_SET(MaxEntityBitNum);
+    UINT32_GET_SET(MaxEntityNum);
     UINT32_GET_SET(MaxMemEntityNum);
     UINT32_GET_SET(MaxMemEntryNum);
-    UINT32_GET_SET(MaxLeaseMS);
-    UINT32_GET_SET(MinLeaseMS);
+    UINT32_GET_SET(LeaseDurationMS);
     UINT32_GET_SET(EnableCheckSum);
     UINT32_GET_SET(DBRoutineCnt);
     UINT32_GET_SET(GetAllRoutineCnt);
@@ -421,7 +416,6 @@ public:
     UINT32_GET_SET(PLogExpireTimeMS);
 
     TYPE_GET_SET(string, CertainPath, strCertainPath);
-    TYPE_GET_SET(string, PerfLogPath, strPerfLogPath);
     TYPE_GET_SET(string, LogPath, strLogPath);
 
     //TYPE_GET_SET(vector<InetAddr_t>, ServerAddrs, vecServerAddr);

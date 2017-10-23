@@ -1,5 +1,4 @@
 #include "EntryState.h"
-#include "PerfLog.h"
 
 namespace Certain
 {
@@ -243,7 +242,6 @@ int clsEntryStateMachine::MakeRealRecord(EntryRecord_t &tRecord)
                         EntryRecordToString(tRecord).c_str(),
                         i, EntryRecordToString(tRealRecord).c_str());
 
-                clsPerfLog::GetInstance()->Flush();
                 Assert(false);
             }
         }

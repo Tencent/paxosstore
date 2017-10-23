@@ -233,15 +233,13 @@ int clsConfigure::AddVariables()
     ADD_UINT32(UseCertainLog, 1);
     ADD_UINT32(UseConsole, 0);
     ADD_UINT32(LogLevel, 4);
-    ADD_UINT32(UsePerfLog, 0);
     ADD_UINT32(CmdTimeoutMS, 1000);
     ADD_UINT32(RecoverTimeoutMS, 1000);
     ADD_UINT32(LocalAcceptFirst, 0);
-    ADD_UINT32(MaxEntityBitNum, 64);
-    ADD_UINT32(MaxMemEntityNum, 100000);
+    ADD_UINT32(MaxEntityNum, 1000000);
+    ADD_UINT32(MaxMemEntityNum, 2000000);
     ADD_UINT32(MaxMemEntryNum, 200000);
-    ADD_UINT32(MaxLeaseMS, 0);
-    ADD_UINT32(MinLeaseMS, 0);
+    ADD_UINT32(LeaseDurationMS, 10);
     ADD_UINT32(EnableCheckSum, 0);
     ADD_UINT32(DBRoutineCnt, 5);
     ADD_UINT32(GetAllRoutineCnt, 5);
@@ -281,7 +279,6 @@ int clsConfigure::AddVariables()
     ADD_UINT32(PLogExpireTimeMS, (24 * 3600 * 1000));
 
     AddString(m_strCertainPath, "CertainPath", "/home/rockzheng/certain");
-    AddString(m_strPerfLogPath, "PerfLogPath", "/home/rockzheng/certain/perflog");
     AddString(m_strLogPath, "LogPath", "/home/rockzheng/certain/log");
 
     vector<InetAddr_t> vecDefault;
@@ -337,8 +334,7 @@ void clsConfigure::UpdateConf(clsConfigure *poNewConf)
     UPDATE_UINT32_CONF(MaxCatchUpConcurr);
     UPDATE_UINT32_CONF(MaxMemEntityNum);
     UPDATE_UINT32_CONF(FlushTimeoutUS);
-    UPDATE_UINT32_CONF(MaxLeaseMS);
-    UPDATE_UINT32_CONF(MinLeaseMS);
+    UPDATE_UINT32_CONF(LeaseDurationMS);
     UPDATE_UINT32_CONF(EnableAutoFixEntry);
     UPDATE_UINT32_CONF(GetAllMaxNum);
     UPDATE_UINT32_CONF(EnableMaxPLogEntry);

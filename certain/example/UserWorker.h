@@ -1,7 +1,8 @@
 #pragma once
-#include "Certain.h"
-#include "IOWorker.h"
+#include "certain/Certain.h"
 #include "co_routine.h"
+
+#include "CertainUserImpl.h"
 
 class clsCallDataBase
 {
@@ -37,7 +38,7 @@ public:
 
     static int PushCallData(clsCallDataBase *poCallData)
     {
-        static volatile uint64_t s_iHint = 0;
+        static __thread uint64_t s_iHint = 0;
         uint32_t iWorkerID = Certain::Hash(s_iHint++) % m_iWorkerNum;
 
         int iRet = m_ppUserQueue[iWorkerID]->PushByMultiThread(poCallData);
@@ -66,7 +67,9 @@ private:
     std::stack<UserRoutine_t*> * m_poCoWorkList;
 
     // For simple, not to excute all the pre cmd.
-    Certain::clsLRUTable<uint64_t, vector<clsCallDataBase*>* > *m_poBatchTable;
+    Certain::clsLRUTable<uint64_t, std::vector<clsCallDataBase*>* > *m_poBatchTable;
+
+    clsCertainUserImpl *m_poCertainUserImpl;
 
 public:
 
@@ -77,7 +80,10 @@ public:
 
         m_poCoWorkList = new std::stack<UserRoutine_t*>;
 
-        m_poBatchTable = new Certain::clsLRUTable<uint64_t, vector<clsCallDataBase*>* >;
+        m_poBatchTable = new Certain::clsLRUTable<uint64_t, std::vector<clsCallDataBase*>* >;
+
+        m_poCertainUserImpl = dynamic_cast<clsCertainUserImpl *>(
+                Certain::clsCertainWrapper::GetInstance()->GetCertainUser());
     }
 
     void Run();

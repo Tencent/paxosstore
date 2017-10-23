@@ -72,6 +72,7 @@ enum enumRetCode
     eRetCodeDBStatusErr		= -7107,
     eRetCodeDBGetErr		= -7108,
     eRetCodeDBPutErr		= -7109,
+    eRetCodeEntryErr		= -7110,
 
     eRetCodePLogGetErr		= -7200,
     eRetCodePLogPutErr		= -7201,

@@ -1,7 +1,7 @@
 #ifndef CERTAIN_DBWORKER_H_
 #define CERTAIN_DBWORKER_H_
 
-#include "Certain.h"
+#include "certain/Certain.h"
 #include "IOWorker.h"
 
 namespace Certain
