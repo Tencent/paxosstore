@@ -10,7 +10,8 @@ The example is a simple card server with full neccesary functions implemetation,
 
 # Have a try on the example
 
-    Make a directory for the servers first, for example:
+    Make a directory for the servers first, for example:
+
     $ mkdir /home/rockzheng/certain
 
     Run three servers, you could see they listen on diffent port for the client.
