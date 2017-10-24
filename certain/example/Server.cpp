@@ -36,11 +36,11 @@ int main(int argc, char** argv)
     gpr_setenv("GRPC_POLL_STRATEGY", "epollsig");
     grpc_init(); // for static lib
 
-	if (argc < 3)
-	{
-		printf("%s -c conf_path [options see certain.conf]\n", argv[0]);
-		return -1;
-	}
+    if (argc < 3)
+    {
+        printf("%s -c conf_path [options see certain.conf]\n", argv[0]);
+        return -1;
+    }
 
     int iRet;
     Certain::clsCertainUserBase* poImpl = new clsCertainUserImpl();
@@ -57,7 +57,7 @@ int main(int argc, char** argv)
 
     oConf.SetLogPath(oConf.GetCertainPath() + "/log_" + strLID);
 
-	Certain::clsCertainWrapper *poWrapper = NULL;
+    Certain::clsCertainWrapper *poWrapper = NULL;
     poWrapper = Certain::clsCertainWrapper::GetInstance();
     assert(poWrapper != NULL);
 

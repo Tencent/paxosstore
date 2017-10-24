@@ -554,7 +554,7 @@ void clsIOWorker::RemoveChannel(uint32_t iServerID)
     for (iter = m_vecIntChannel[iServerID].begin();
             iter != m_vecIntChannel[iServerID].end(); ++iter)
     {
-        clsIOChannel * poChannel = *iter;	
+        clsIOChannel * poChannel = *iter;    
         assert(poChannel->GetServerID()==iServerID);
 
         CertainLogDebug("iServerID %u conn: %s",
@@ -583,7 +583,7 @@ void clsIOWorker::PrintConnInfo()
         for (iter = m_vecIntChannel[i].begin();
                 iter != m_vecIntChannel[i].end(); ++iter)
         {
-            clsIOChannel * poChannel = *iter;	
+            clsIOChannel * poChannel = *iter;    
             ConnInfo_t tConnInfo = poChannel->GetConnInfo();
             CertainLogError("svrid %d connectid %d %s\n", i, id, tConnInfo.ToString().c_str());
             id++;

@@ -6,7 +6,7 @@
 namespace Certain
 {
 
-#define CERTAIN_MAX_FD_NUM				(1 << 20)
+#define CERTAIN_MAX_FD_NUM          (1 << 20)
 #define CERTAIN_EPOLLIO_UNREACHABLE do { assert(false); return 0; } while(0)
 
 const int kDefaultFDEvents = EPOLLIN | EPOLLOUT | EPOLLET;

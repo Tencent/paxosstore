@@ -12,8 +12,8 @@ template<typename T>
 class clsFixSizeAllocator : public allocator<T>
 {
 public:
-    typedef size_t	size_type;
-    typedef T *		pointer;
+    typedef size_t    size_type;
+    typedef T *       pointer;
 
     clsFixSizePool *m_poFixSizePool;
 

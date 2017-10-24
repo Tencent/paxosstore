@@ -43,11 +43,11 @@ message PaxosCmd
 
 message DBEntityMeta
 {
-	optional uint32 flag = 1;
-	optional uint64 max_commited_entry = 2;
+    optional uint32 flag = 1;
+    optional uint64 max_commited_entry = 2;
 };
 
 message PLogEntityMeta
 {
-	optional uint64 max_plog_entry = 1;
+    optional uint64 max_plog_entry = 1;
 };

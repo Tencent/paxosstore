@@ -295,9 +295,9 @@ int clsCircleQueue<Type>::Push(Type tElt)
 
 // Circular queue access methods.
 
-#define    CIRCLEQ_EMPTY(type, head)        ((head)->cqh_first == (type *)(head))
-#define    CIRCLEQ_FIRST(head)        ((head)->cqh_first)
-#define    CIRCLEQ_LAST(head)        ((head)->cqh_last)
+#define    CIRCLEQ_EMPTY(type, head)    ((head)->cqh_first == (type *)(head))
+#define    CIRCLEQ_FIRST(head)          ((head)->cqh_first)
+#define    CIRCLEQ_LAST(head)           ((head)->cqh_last)
 
 } // namespace Certain
 

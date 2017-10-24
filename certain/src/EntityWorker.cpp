@@ -348,7 +348,7 @@ bool clsEntityWorker::CheckIfEntryNumLimited(uint64_t iSkippedEntityID,
     {
         CertainLogError("can't remove mid E(%lu, %lu) status %u for room",
                 tPos.iEntityID, tPos.iEntry, ptInfo->poMachine->GetEntryState());
-        OSS::ReportMidStateElimFailed();
+        OSS::ReportMidElimFailed();
     }
     else if (ptInfo->poMachine->GetEntryState() == kEntryStateNormal)
     {

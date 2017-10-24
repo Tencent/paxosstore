@@ -82,7 +82,7 @@ int clsServiceImpl::GetDBEntityMeta(grpc::ServerContext& oContext,
     iRet = poCertain->RunPaxos(iEntityID, iEntry, example::OperCode::eGetDBEntityMeta, vecUUID, strWriteBatch);
     if (iRet != 0) return iRet;
 
-	uint32_t iFlag = 0;
+    uint32_t iFlag = 0;
     clsDBImpl* poDBEngine = dynamic_cast<clsDBImpl*>(
             Certain::clsCertainWrapper::GetInstance()->GetDBEngine());
 
@@ -91,7 +91,7 @@ int clsServiceImpl::GetDBEntityMeta(grpc::ServerContext& oContext,
     iRet = poDBEngine->InsertSnapshot(iSequenceNumber, poSnapshot);
     if (iRet != 0) return iRet;
 
-	iRet = poDBEngine->GetEntityMeta(iEntityID, iMaxCommitedEntry, iFlag, poSnapshot);
+    iRet = poDBEngine->GetEntityMeta(iEntityID, iMaxCommitedEntry, iFlag, poSnapshot);
 
     if (iRet != 0) return iRet;
     if (iFlag != 0) return Certain::eRetCodeGetDBEntityMetaErr;
@@ -145,7 +145,7 @@ int clsServiceImpl::RecoverData(grpc::ServerContext& oContext,
 
     {
         Certain::clsAutoEntityLock oEntityLock(iEntityID);
-	    poDBEngine->GetEntityMeta(iEntityID, iMaxCommitedEntry, iFlag);
+        poDBEngine->GetEntityMeta(iEntityID, iMaxCommitedEntry, iFlag);
     }
     if (iMaxCommitedEntry > 0 && iFlag == 0) return 0;
 
@@ -245,7 +245,12 @@ int clsServiceImpl::BatchFunc(int iOper,
 
     uint64_t iEndUS = Certain::GetCurrTimeUS();
 
-    CertainLogError("iEntityID %lu iPushTime %lu iLockTime %lu iPopTime %lu "
+    if (iRet == 0)
+    {
+        poDBEngine->Commit(poItem->iEntityID, iEntry, oTable.GetWriteBatchString());
+    }
+
+    CertainLogInfo("iEntityID %lu iPushTime %lu iLockTime %lu iPopTime %lu "
             "iCatchUpTime %lu iBatchHandleTime %lu iRunPaxos %lu iTotalUS %lu "
             "iRead %lu iWrite %lu",
             poItem->iEntityID, 

@@ -10,17 +10,17 @@ const int kPLogMetaKeyLen = (sizeof(uint64_t) * 2 + 1);
 
 uint64_t ntohll(uint64_t i)
 {
-	if (__BYTE_ORDER == __LITTLE_ENDIAN) {
-		return (((uint64_t)ntohl((uint32_t)i)) << 32) | (uint64_t)(ntohl((uint32_t)(i >> 32)));
-	}
+    if (__BYTE_ORDER == __LITTLE_ENDIAN) {
+        return (((uint64_t)ntohl((uint32_t)i)) << 32) | (uint64_t)(ntohl((uint32_t)(i >> 32)));
+    }
     return i;
 }
 
 uint64_t htonll(uint64_t i)
 {
-	if (__BYTE_ORDER == __LITTLE_ENDIAN) {
-		return (((uint64_t)htonl((uint32_t)i)) << 32) | ((uint64_t)htonl((uint32_t)(i >> 32)));
-	}
+    if (__BYTE_ORDER == __LITTLE_ENDIAN) {
+        return (((uint64_t)htonl((uint32_t)i)) << 32) | ((uint64_t)htonl((uint32_t)(i >> 32)));
+    }
     return i;
 }
 

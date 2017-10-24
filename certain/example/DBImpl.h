@@ -38,7 +38,7 @@ private:
 
     Certain::clsMutex m_poSnapshotMapMutex;
     // timestmp -> (sequence, snapshot)
-	std::map<uint32_t, std::pair<uint64_t, std::shared_ptr<clsSnapshotWrapper>>> m_poSnapshotMap;
+    std::map<uint32_t, std::pair<uint64_t, std::shared_ptr<clsSnapshotWrapper>>> m_poSnapshotMap;
 
 public:
     clsDBImpl(dbtype::DB *poLevelDB) : m_poLevelDB(poLevelDB) {}

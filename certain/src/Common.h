@@ -21,27 +21,29 @@
 #include "network/IOChannel.h"
 #include "network/EpollIO.h"
 
-#define INVALID_ACCEPTOR_ID 	(uint32_t(-1))
-#define INVALID_SERVER_ID		(uint32_t(-1))
-#define INVALID_PROPOSAL_NUM	(uint32_t(-1))
+#define INVALID_ACCEPTOR_ID     (uint32_t(-1))
+#define INVALID_SERVER_ID       (uint32_t(-1))
+#define INVALID_PROPOSAL_NUM    (uint32_t(-1))
 
-#define INVALID_ENTITY_ID		(uint64_t(-1))
-#define INVALID_ENTRY			(uint64_t(-1))
+#define INVALID_ENTITY_ID       (uint64_t(-1))
+#define INVALID_ENTRY           (uint64_t(-1))
 
-#define MAX_IO_WORKER_NUM		128
-#define MAX_ENTITY_WORKER_NUM	128
-#define MAX_SMALL_ENTITY_NUM 	0 // Disabled.
+#define MAX_IO_WORKER_NUM       128
+#define MAX_ENTITY_WORKER_NUM   128
+#define MAX_SMALL_ENTITY_NUM    0 // Disabled.
 
-#define MAX_WRITEBATCH_SIZE		((20 << 20) - 1000) // 20MB around
+// Required: PB's limited size(60MB default) > MAX_WRITEBATCH_SIZE * 2
+//           And a few bytes should be reserved for other fields.
+#define MAX_WRITEBATCH_SIZE     ((20 << 20) - 1000) // 20MB around
 
-#define MAX_UUID_NUM			50000
-#define UUID_GROUP_NUM			32
+#define MAX_UUID_NUM            50000
+#define UUID_GROUP_NUM          32
 
-#define MAX_ASYNC_PIPE_NUM 		60
+#define MAX_ASYNC_PIPE_NUM      60
 
 #define MAX_CONTROL_GROUP_NUM   24
 
-#define RP_MAGIC_NUM 			0x81ac
+#define RP_MAGIC_NUM            0x81ac
 
 namespace Certain
 {

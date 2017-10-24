@@ -645,7 +645,7 @@ int clsPLogWorker::EnterPLogReqQueue(clsCmdBase *poCmd)
     {
         OSS::ReportPLogQueueErr();
         //CertainLogError("PushByMultiThread ret %d cmd: %s",
-        //		iRet, poCmd->GetTextCmd().c_str());
+        //        iRet, poCmd->GetTextCmd().c_str());
         return -1;
     }
 

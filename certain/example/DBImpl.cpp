@@ -376,7 +376,7 @@ int clsDBImpl::GetBatch(uint64_t iEntityID, std::string& strNextKey, std::string
         oWB.Put(key, value);
     }
 
-    if (strWriteBatch != NULL && dbtype::WriteBatchInternal::Count(&oWB) > 0)
+    if (strWriteBatch != NULL && oWB.Count() > 0)
         *strWriteBatch = oWB.Data();
 
     return Certain::eRetCodeOK;
@@ -442,7 +442,7 @@ int clsDBImpl::InsertSnapshot(uint64_t& iSequenceNumber, const dbtype::Snapshot*
     else 
     {
         poSnapshot = m_poLevelDB->GetSnapshot();
-        iSequenceNumber = reinterpret_cast<const dbtype::SnapshotImpl*>(poSnapshot)->number_;
+        iSequenceNumber = poSnapshot->GetSequenceNumber();
 
         for (auto iter = m_poSnapshotMap.begin(); iter != m_poSnapshotMap.end(); ++iter)
         {
@@ -490,7 +490,7 @@ void clsDBImpl::EraseSnapshot()
         if ((iter->first + kSnapshotTimeOut < iTimeStamp) || (iCount > kSnapshotCount))
         {
             if (iCount > 0) --iCount;
-		    m_poSnapshotMap.erase(iter++);
+            m_poSnapshotMap.erase(iter++);
         } else {
             iter++;
         }
