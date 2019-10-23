@@ -1,23 +1,23 @@
-cd third;
+pushd third;
 
 if test ! -e protobuf/src/.libs/libprotobuf.a; then
-    cd protobuf; sh ./autogen.sh; ./configure; make -j 4; cd ..;
+    pushd protobuf; sh ./autogen.sh; ./configure; make -j 4; popd;
 fi
 
 if test ! -e rocksdb/librocksdb.a; then
-    cd rocksdb; make -j 4 static_lib; cd ..;
+    pushd rocksdb; make -j 4 static_lib; popd;
 fi
 
 if test ! -e libco/lib/libcolib.a; then
-    cd libco; make -j 4 colib; cd ..;
+    pushd libco; make -j 4 colib; popd;
 fi
 
 if test ! -e googletest/googletest/libgtest.a; then
-    cd googletest/googletest; cmake .; make -j 4; cd ../..;
+    pushd googletest/googletest; cmake .; make -j 4; popd;
 fi
 
 if test ! -e grpc/libs/opt/libgrpc.a; then
-    cd grpc; cmake .; make -j 4; cd ../..;
+    pushd grpc; cmake .; make -j 4; popd;
 fi
 
-cd ..;
+popd;
