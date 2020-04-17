@@ -45,7 +45,7 @@ struct InetAddr_t
             return tAddr.sin_port < tOtherAddr.sin_port;
         }
 
-        return true;
+        return false;
     }
 
     InetAddr_t()
@@ -85,7 +85,7 @@ struct InetAddr_t
         return acBuffer;
     }
 
-    uint32_t GetNetOrderIP()
+    uint32_t GetNetOrderIP() const
     {
         return tAddr.sin_addr.s_addr;
     }
