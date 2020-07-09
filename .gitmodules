@@ -26,10 +26,6 @@
 	path = certain/third/googletest
 	url = https://github.com/google/googletest
     ignore = dirty
-[submodule "certain/third/grpc"]
-	path = certain/third/grpc
-	url = https://github.com/grpc/grpc
-    ignore = dirty
 [submodule "certain/third/rocksdb"]
 	path = certain/third/rocksdb
 	url = https://github.com/facebook/rocksdb
@@ -37,4 +33,16 @@
 [submodule "certain/third/protobuf"]
 	path = certain/third/protobuf
 	url = https://github.com/google/protobuf
+    ignore = dirty
+[submodule "certain/third/gflags"]
+	path = certain/third/gflags
+	url = https://github.com/gflags/gflags
+    ignore = dirty
+[submodule "certain/third/glog"]
+	path = certain/third/glog
+	url = https://github.com/google/glog
+    ignore = dirty
+[submodule "certain/third/gperftools"]
+	path = certain/third/gperftools
+	url = https://github.com/google/gperftools
     ignore = dirty
