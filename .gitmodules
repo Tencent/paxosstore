@@ -42,7 +42,3 @@
 	path = certain/third/glog
 	url = https://github.com/google/glog
     ignore = dirty
-[submodule "certain/third/gperftools"]
-	path = certain/third/gperftools
-	url = https://github.com/google/gperftools
-    ignore = dirty
