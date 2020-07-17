@@ -1,0 +1,8 @@
+BasedOnStyle: Google
+AlignTrailingComments: true
+AllowShortFunctionsOnASingleLine: true
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+ColumnLimit: 80
+DerivePointerAlignment: false
+PointerAlignment: Left

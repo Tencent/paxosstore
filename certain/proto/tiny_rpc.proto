@@ -1,0 +1,59 @@
+syntax = "proto2";
+
+package certain;
+
+option cc_generic_services = true;
+
+message SnapshotRecoverReq {
+  optional uint64 entity_id = 1;
+  optional bool get_max_apply_entry_only = 2;
+}
+
+message SnapshotRecoverRsp {
+  optional uint64 max_apply_entry = 1;
+  optional bytes data = 2;
+}
+
+message WriteReq {
+  optional uint64 entity_id = 1;
+  optional uint64 entry = 2;
+  optional bytes value = 3;
+  repeated uint64 uuids = 4;
+}
+
+message WriteRsp {}
+
+message ReadReq {
+  optional uint64 entity_id = 1;
+  optional uint64 entry = 2;
+}
+
+message ReadRsp {}
+
+message AppendStringReq {
+  optional uint64 entity_id = 1;
+  optional bytes value = 2;
+  optional uint64 uuid = 3;
+}
+
+message AppendStringRsp {
+  optional uint64 write_entry = 1;
+  optional uint64 current_entry = 2;
+  optional uint32 current_crc32 = 3;
+}
+
+message GetStringStatusReq { optional uint64 entity_id = 1; }
+
+message GetStringStatusRsp {
+  optional uint64 read_entry = 1;
+  optional uint64 current_entry = 2;
+  optional uint32 current_crc32 = 3;
+}
+
+service TinyRpcService {
+  rpc SnapshotRecover(SnapshotRecoverReq) returns (SnapshotRecoverRsp);
+  rpc Write(WriteReq) returns (WriteRsp);
+  rpc Read(ReadReq) returns (ReadRsp);
+  rpc AppendString(AppendStringReq) returns (AppendStringRsp);
+  rpc GetStringStatus(GetStringStatusReq) returns (GetStringStatusRsp);
+}

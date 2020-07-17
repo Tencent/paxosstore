@@ -1,11 +1,5 @@
-*.o
-*.a
-*.so
-*.pb.h
-*.pb.cc
-
-bench_tool
-card_srv
-card_tool
-db_tool
-rw_stress_tool
+*.pb.*
+/test_db.o/
+/test_log.o/
+/test_plog.o/
+/third/

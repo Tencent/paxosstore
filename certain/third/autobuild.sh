@@ -16,8 +16,16 @@ if test ! -e googletest/googletest/libgtest.a; then
     cd googletest/googletest; cmake .; make -j 4; cd ../..;
 fi
 
-if test ! -e grpc/libs/opt/libgrpc.a; then
-    cd grpc; cmake .; make -j 4; cd ../..;
+if test ! -e gflags/lib/libgflags.a; then
+    cd gflags; cmake .; make -j 4; cd ..;
+fi
+
+if test ! -e glog/.libs/libglog.a; then
+    cd glog; sh ./autogen.sh; ./configure; make -j 4; cd ..;
+fi
+
+if test ! -e gperftools/.libs/libtcmalloc_and_profiler.a; then
+    cd gperftools; sh ./autogen.sh; ./configure; make -j 4; cd ..;
 fi
 
 cd ..;

@@ -1,0 +1,49 @@
+syntax = "proto2";
+
+package certain;
+
+message EntryRecord {
+  optional uint32 prepared_num = 1;
+  optional uint32 promised_num = 2;
+  optional uint32 accepted_num = 3;
+
+  optional uint64 value_id = 4;
+  optional bytes value = 5;
+  repeated uint64 uuids = 6;
+
+  optional bool chosen = 7;
+  optional bool has_value_id_only = 8;
+}
+
+message CmdHeader {
+  optional uint64 uuid = 1;
+  optional int32 result = 2;
+
+  optional uint64 entity_id = 3;
+  optional uint64 entry = 4;
+}
+
+message PaxosMsg {
+  optional CmdHeader header = 1;
+
+  optional uint32 local_acceptor_id = 2;
+  optional uint32 peer_acceptor_id = 3;
+
+  optional EntryRecord local_entry_record = 4;
+  optional EntryRecord peer_entry_record = 5;
+
+  optional uint64 max_chosen_entry = 6;
+
+  optional bool check_empty = 7;
+  optional bool catchup = 8;
+}
+
+message RangeCatchupMsg {
+  optional CmdHeader header = 1;
+
+  optional uint32 local_acceptor_id = 2;
+  optional uint32 peer_acceptor_id = 3;
+
+  optional uint64 begin_entry = 4;
+  optional uint64 end_entry = 5;
+}
